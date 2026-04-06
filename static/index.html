@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduQuest - Gamificação Educacional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ==================== THEME VARIABLES ==================== */
+
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            /* Default Blue Theme */
+            --primary-neon: #00ffff;
+            --secondary-neon: #ff00ff;
+            --accent-neon: #ffff00;
+            --success-neon: #00ff00;
+            --danger-neon: #ff0040;
+            --warning-neon: #ff8000;
+            --bg-dark: #0a0a0f;
+            --bg-darker: #050508;
+            --bg-card: rgba(15, 15, 25, 0.9);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --border-color: rgba(0, 255, 255, 0.2);
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #00ffff 100%);
+            --gradient-gold: linear-gradient(135deg, #ffd700, #ff8c00);
+            --gradient-cyan: linear-gradient(135deg, #00ffff, #0080ff);
+            --gradient-green: linear-gradient(135deg, #00ff00, #32cd32);
+            --gradient-purple: linear-gradient(135deg, #ff00ff, #8a2be2);
+            --gradient-red: linear-gradient(135deg, #ff0040, #dc143c);
+            --gradient-teal: linear-gradient(135deg, #00ced1, #20b2aa);
+            --gradient-orange: linear-gradient(135deg, #ff8c00, #ffa500);
+            --gradient-violet: linear-gradient(135deg, #9370db, #ba55d3);
+            --bg-particles: radial-gradient(ellipse at center, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            --hero-glow: rgba(0, 255, 255, 0.1);
+            --font-primary: 'Orbitron', monospace;
+            --font-secondary: 'Rajdhani', sans-serif;
+        }
+
+        /* Military Brazil Theme */
+        [data-theme="military"] {
+            --primary-neon: #00C853;
+            --secondary-neon: #FFEA00;
+            --accent-neon: #FFEA00;
+            --success-neon: #00C853;
+            --danger-neon: #8B0000;
+            --warning-neon: #D2691E;
+            --bg-dark: #1a2612;
+            --bg-darker: #0f140a;
+            --bg-card: rgba(35, 50, 25, 0.9);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.85);
+            --text-muted: rgba(255, 255, 255, 0.75);
+            --border-color: rgba(0, 200, 83, 0.6);
+            --gradient-primary: linear-gradient(135deg, #00C853 0%, #007A33 50%, #FFEA00 100%);
+            --gradient-gold: linear-gradient(135deg, #FFEA00, #D4A017);
+            --gradient-cyan: linear-gradient(135deg, #00C853, #6B8E3B);
+            --gradient-green: linear-gradient(135deg, #00C853, #00ff41);
+            --gradient-purple: linear-gradient(135deg, #A65E2E, #7A5230);
+            --gradient-red: linear-gradient(135deg, #8B0000, #A52A2A);
+            --gradient-teal: linear-gradient(135deg, #6B8E3B, #4B5320);
+            --gradient-orange: linear-gradient(135deg, #D2691E, #D2B48C);
+            --gradient-violet: linear-gradient(135deg, #8B7355, #A0522D);
+            --bg-particles: radial-gradient(ellipse at center, #2a3e2a 0%, #1a2a1a 50%, #0f1a0f 100%);
+            --hero-glow: rgba(0, 200, 83, 0.25);
+        }
+
+        /* Light Theme */
+        [data-theme="light"] {
+            --primary-neon: #00A651;
+            --secondary-neon: #FFD700;
+            --accent-neon: #FFD700;
+            --success-neon: #00A651;
+            --danger-neon: #CD5C5C;
+            --warning-neon: #D2691E;
+            --bg-dark: #F5F5DC;
+            --bg-darker: #E8E4C9;
+            --bg-card: rgba(255, 255, 250, 0.95);
+            --text-primary: #2C3E2C;
+            --text-secondary: rgba(44, 62, 44, 0.85);
+            --text-muted: rgba(44, 62, 44, 0.75);
+            --border-color: rgba(0, 166, 81, 0.3);
+            --gradient-primary: linear-gradient(135deg, #00A651 0%, #007A33 40%, #FFD700 100%);
+            --gradient-gold: linear-gradient(135deg, #FFD700, #FFED4A);
+            --gradient-cyan: linear-gradient(135deg, #00A651, #6B8E23);
+            --gradient-green: linear-gradient(135deg, #00A651, #00D46A);
+            --gradient-purple: linear-gradient(135deg, #A0522D, #8B7355);
+            --gradient-red: linear-gradient(135deg, #CD5C5C, #A0522D);
+            --gradient-teal: linear-gradient(135deg, #6B8E23, #9ACD32);
+            --gradient-orange: linear-gradient(135deg, #D2691E, #F4A460);
+            --gradient-violet: linear-gradient(135deg, #C3B091, #D2B48C);
+            --bg-particles: linear-gradient(135deg, #F5F5DC 0%, #E8E4C9 25%, #D4C4A0 50%, #C3B091 75%, #B8A88A 100%);
+            --hero-glow: rgba(0, 166, 81, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-secondary);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+
+        /* ==================== THEME TOGGLE BUTTON ==================== */
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            margin-left: 1rem;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--border-color);
+        }
+
+        .theme-toggle i {
+            font-size: 1rem;
+        }
+
+        /* ==================== PARTICLES BACKGROUND ==================== */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            background: var(--bg-particles);
+            transition: background 0.5s ease;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--primary-neon);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); opacity: 0.6; }
+            50% { transform: translateY(-20px); opacity: 1; }
+        }
+
+        /* ==================== NAVIGATION ==================== */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            transition: all 0.5s ease;
+            padding: 1rem 2rem;
+        }
+
+        nav.scrolled {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo i {
+            font-size: 2rem;
+            color: var(--primary-neon);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .logo span {
+            font-family: var(--font-primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-neon);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-neon);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .btn-login {
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: #fff;
+            border: none;
+            border-radius: 0.5rem;
+            font-family: var(--font-primary);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-login:hover {
+            box-shadow: 0 0 30px var(--border-color);
+            transform: translateY(-2px);
+        }
+
+        /* ==================== HERO SECTION ==================== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 6rem 2rem 4rem;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, var(--hero-glow) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 900px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--hero-glow);
+            border: 1px solid var(--border-color);
+            border-radius: 2rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero-badge i {
+            color: var(--primary-neon);
+        }
+
+        .hero-badge span {
+            font-size: 0.9rem;
+            color: var(--primary-neon);
+            font-weight: 500;
+        }
+
+        .hero h1 {
+            font-family: var(--font-primary);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+
+        .hero h1 .gradient-text {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: neonFlicker 2s infinite;
+        }
+
+        @keyframes neonFlicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.9; }
+            75% { opacity: 0.95; }
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.6;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .hero-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(128, 128, 128, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+        }
+
+        .hero-stat i {
+            font-size: 1.25rem;
+        }
+
+        .hero-stat:nth-child(1) i { color: var(--primary-neon); }
+        .hero-stat:nth-child(2) i { color: var(--accent-neon); }
+        .hero-stat:nth-child(3) i { color: var(--secondary-neon); }
+        .hero-stat:nth-child(4) i { color: var(--success-neon); }
+
+        .hero-stat .value {
+            font-family: var(--font-primary);
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .hero-stat .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+
+        .btn-primary {
+            padding: 1rem 2rem;
+            background: var(--gradient-primary);
+            color: #fff;
+            border: none;
+            border-radius: 0.75rem;
+            font-family: var(--font-primary);
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 10px 40px var(--border-color);
+            transform: translateY(-3px);
+        }
+
+        .btn-secondary {
+            padding: 1rem 2rem;
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            font-family: var(--font-primary);
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--secondary-neon);
+            box-shadow: 0 0 20px var(--border-color);
+        }
+
+        /* ==================== FLOATING CARDS ==================== */
+        .floating-cards {
+            position: relative;
+            height: 200px;
+            margin-top: 3rem;
+            animation: fadeInUp 0.8s ease 0.5s both;
+        }
+
+        .float-card {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(20px);
+            animation: floatCard 6s ease-in-out infinite;
+        }
+
+        .float-card:nth-child(1) {
+            left: 10%;
+            top: 0;
+            animation-delay: 0s;
+        }
+
+        .float-card:nth-child(2) {
+            right: 10%;
+            top: 20px;
+            animation-delay: 2s;
+        }
+
+        .float-card:nth-child(3) {
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 0;
+            animation-delay: 4s;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .float-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .float-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .float-card:nth-child(1) .float-card-icon {
+            background: var(--gradient-cyan);
+        }
+
+        .float-card:nth-child(2) .float-card-icon {
+            background: var(--gradient-gold);
+        }
+
+        .float-card:nth-child(3) .float-card-icon {
+            background: var(--gradient-purple);
+        }
+
+        .float-card-title {
+            font-family: var(--font-primary);
+            font-weight: 700;
+            color: var(--primary-neon);
+        }
+
+        .float-card-text {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        /* ==================== FEATURES SECTION ==================== */
+        .features {
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(128, 128, 128, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-badge i {
+            color: var(--secondary-neon);
+        }
+
+        .section-badge span {
+            font-size: 0.9rem;
+            color: var(--secondary-neon);
+            font-weight: 500;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-primary);
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-header h2 span {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary-neon);
+            box-shadow: 0 10px 40px var(--border-color);
+            transform: translateY(-5px);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--card-color) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+            opacity: 0.1;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card:nth-child(1) .feature-icon { background: var(--gradient-gold); }
+        .feature-card:nth-child(2) .feature-icon { background: var(--gradient-cyan); }
+        .feature-card:nth-child(3) .feature-icon { background: var(--gradient-green); }
+        .feature-card:nth-child(4) .feature-icon { background: var(--gradient-purple); }
+        .feature-card:nth-child(5) .feature-icon { background: var(--gradient-red); }
+        .feature-card:nth-child(6) .feature-icon { background: var(--gradient-teal); }
+        .feature-card:nth-child(7) .feature-icon { background: var(--gradient-orange); }
+        .feature-card:nth-child(8) .feature-icon { background: var(--gradient-violet); }
+
+        .feature-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(128, 128, 128, 0.1);
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .feature-badge i {
+            color: var(--warning-neon);
+        }
+
+        .feature-card h3 {
+            font-family: var(--font-primary);
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== STATS SECTION ==================== */
+        .stats-section {
+            padding: 4rem 2rem;
+            background: rgba(128, 128, 128, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+        }
+
+        .stat-card .value {
+            font-family: var(--font-primary);
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-gold);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* ==================== HOW IT WORKS ==================== */
+        .how-it-works {
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .steps-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            border-color: var(--primary-neon);
+            transform: translateY(-5px);
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-cyan);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-primary);
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin: 0 auto 1.5rem;
+        }
+
+        .step-card h3 {
+            font-family: var(--font-primary);
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .step-card p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .step-features {
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .step-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-feature i {
+            color: var(--success-neon);
+        }
+
+        /* ==================== CTA SECTION ==================== */
+        .cta-section {
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .cta-container {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 1.5rem;
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--hero-glow), rgba(128, 128, 128, 0.1), var(--hero-glow));
+            opacity: 0.5;
+        }
+
+        .cta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--hero-glow);
+            border: 1px solid var(--border-color);
+            border-radius: 2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-badge i {
+            color: var(--primary-neon);
+        }
+
+        .cta-badge span {
+            font-size: 0.9rem;
+            color: var(--primary-neon);
+            font-weight: 500;
+        }
+
+        .cta-container h2 {
+            font-family: var(--font-primary);
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-container h2 span {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cta-container > p {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-benefits {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-benefit {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(128, 128, 128, 0.05);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .cta-benefit i {
+            color: var(--success-neon);
+        }
+
+        .cta-form {
+            display: flex;
+            gap: 1rem;
+            max-width: 400px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-form input {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            background: rgba(128, 128, 128, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .cta-form input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .cta-form input:focus {
+            outline: none;
+            border-color: var(--primary-neon);
+        }
+
+        .cta-trust {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-trust span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .cta-trust i {
+            color: var(--success-neon);
+        }
+
+        /* ==================== FOOTER ==================== */
+        footer {
+            padding: 3rem 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .footer-logo i {
+            font-size: 1.5rem;
+            color: var(--primary-neon);
+        }
+
+        .footer-logo span {
+            font-family: var(--font-primary);
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-neon);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .footer-social a {
+            width: 40px;
+            height: 40px;
+            background: rgba(128, 128, 128, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+            border-color: var(--primary-neon);
+            color: var(--primary-neon);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* ==================== ANIMATIONS ==================== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 5rem 1.5rem 3rem;
+            }
+
+            .hero-stats {
+                gap: 0.75rem;
+            }
+
+            .hero-stat {
+                padding: 0.5rem 0.75rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .floating-cards {
+                display: none;
+            }
+
+            .features,
+            .how-it-works,
+            .cta-section {
+                padding: 4rem 1.5rem;
+            }
+
+            .cta-form {
+                flex-direction: column;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-neon);
+        }
+
+        /* ==================== SELECTION ==================== */
+        ::selection {
+            background: var(--primary-neon);
+            color: var(--bg-dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- Particles Background -->
+    <div id="particles-container" class="particles-container"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <span>EduQuest</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Recursos</a>
+                <a href="#how-it-works">Como Funciona</a>
+                <a href="#achievements">Conquistas</a>
+                <a href="app/index.html" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </a>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+                    <i class="fas fa-palette"></i>
+                    <span id="themeText">Tema Azul</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <i class="fas fa-sparkles"></i>
+                <span id="heroBadgeText">Nova Era da Educação</span>
+            </div>
+
+            <h1>
+                <span id="heroTitle1">Transforme seu</span><br>
+                <span class="gradient-text" id="heroTitle2">Aprendizado</span><br>
+                <span id="heroTitle3">em uma Aventura</span>
+            </h1>
+
+            <p>Gamificação educacional que torna cada conquista uma recompensa. Suba de nível, desbloqueie conquistas e domine novos conhecimentos.</p>
+
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <i class="fas fa-trophy"></i>
+                    <div>
+                        <div class="value">50+</div>
+                        <div class="label">Conquistas</div>
+                    </div>
+                </div>
+                <div class="hero-stat">
+                    <i class="fas fa-bullseye"></i>
+                    <div>
+                        <div class="value">100+</div>
+                        <div class="label">Missões</div>
+                    </div>
+                </div>
+                <div class="hero-stat">
+                    <i class="fas fa-users"></i>
+                    <div>
+                        <div class="value">10K+</div>
+                        <div class="label">Estudantes</div>
+                    </div>
+                </div>
+                <div class="hero-stat">
+                    <i class="fas fa-fire"></i>
+                    <div>
+                        <div class="value">1M+</div>
+                        <div class="label">XP Conquistado</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-buttons">
+                <a href="app/index.html" class="btn-primary">
+                    <i class="fas fa-rocket"></i> Começar Jornada
+                </a>
+                <a href="#features" class="btn-secondary">
+                    <i class="fas fa-play"></i> Ver Demonstração
+                </a>
+            </div>
+
+            <!-- Floating Cards -->
+            <div class="floating-cards">
+                <div class="float-card">
+                    <div class="float-card-header">
+                        <div class="float-card-icon">⚡</div>
+                        <span class="float-card-title">+500 XP</span>
+                    </div>
+                    <p class="float-card-text">Missão completada!</p>
+                </div>
+                <div class="float-card">
+                    <div class="float-card-header">
+                        <div class="float-card-icon">🏆</div>
+                        <span class="float-card-title" style="color: var(--accent-neon);">Nível 5</span>
+                    </div>
+                    <p class="float-card-text">Novo rank alcançado!</p>
+                </div>
+                <div class="float-card">
+                    <div class="float-card-header">
+                        <div class="float-card-icon">⭐</div>
+                        <span class="float-card-title" style="color: var(--secondary-neon);">Conquista!</span>
+                    </div>
+                    <p class="float-card-text">Mestre do Conhecimento</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <div class="section-badge">
+                <i class="fas fa-star"></i>
+                <span>Recursos Épicos</span>
+            </div>
+            <h2>
+                Tudo que você precisa para<br>
+                <span>gamificar sua educação</span>
+            </h2>
+            <p>Uma plataforma completa com todas as ferramentas necessárias para transformar o aprendizado em uma experiência envolvente e motivadora.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>50+ conquistas</span>
+                </div>
+                <h3>Sistema de Conquistas</h3>
+                <p>Desbloqueie conquistas épicas ao completar desafios e atingir metas de aprendizado.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>Missões renovadas</span>
+                </div>
+                <h3>Missões Diárias</h3>
+                <p>Novas missões todos os dias para manter o engajamento e motivação dos estudantes.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>Progressão infinita</span>
+                </div>
+                <h3>Sistema de XP</h3>
+                <p>Ganhe pontos de experiência por cada atividade completada e suba de nível.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-gem"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>Loja virtual</span>
+                </div>
+                <h3>Cristais & Recompensas</h3>
+                <p>Acumule cristais para trocar por recompensas exclusivas na loja virtual.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>Competição saudável</span>
+                </div>
+                <h3>Rankings & Leaderboards</h3>
+                <p>Compita com outros estudantes e alcance o topo do ranking da sua turma.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>Trabalho em equipe</span>
+                </div>
+                <h3>Turmas & Equipes</h3>
+                <p>Forme equipes, participe de desafios em grupo e conquiste juntos.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>Múltiplas áreas</span>
+                </div>
+                <h3>Disciplinas Gamificadas</h3>
+                <p>Cada disciplina se torna uma jornada única com seus próprios desafios.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-certificate"></i>
+                </div>
+                <div class="feature-badge">
+                    <i class="fas fa-fire"></i>
+                    <span>Reconhecimento</span>
+                </div>
+                <h3>Certificados & Badges</h3>
+                <p>Receba certificados digitais e badges para comemorar suas conquistas.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value">98%</div>
+                <div class="label">Satisfação dos usuários</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">3x</div>
+                <div class="label">Mais engajamento</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">50+</div>
+                <div class="label">Instituições parceiras</div>
+            </div>
+            <div class="stat-card">
+                <div class="value">24/7</div>
+                <div class="label">Suporte dedicado</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-header">
+            <div class="section-badge">
+                <i class="fas fa-check-circle"></i>
+                <span>Simples e Intuitivo</span>
+            </div>
+            <h2>
+                Como funciona a<br>
+                <span>gamificação</span>
+            </h2>
+            <p>Quatro passos simples para transformar sua jornada educacional em uma aventura épica.</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">01</div>
+                <h3>Crie sua Conta</h3>
+                <p>Registre-se como estudante, professor ou administrador. Escolha seu avatar e personalize seu perfil gamer.</p>
+                <div class="step-features">
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Perfil personalizado</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Avatar único</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Escolha seu papel</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number" style="background: var(--gradient-purple);">02</div>
+                <h3>Escolha suas Missões</h3>
+                <p>Acesse missões disponíveis nas suas disciplinas matriculadas. Cada missão tem recompensas em XP e cristais.</p>
+                <div class="step-features">
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Missões variadas</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Diferentes dificuldades</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Recompensas claras</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number" style="background: var(--gradient-green);">03</div>
+                <h3>Complete Desafios</h3>
+                <p>Execute as atividades propostas, envie suas respostas e aguarde a avaliação do professor.</p>
+                <div class="step-features">
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Atividades interativas</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Feedback imediato</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Múltiplas tentativas</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number" style="background: var(--gradient-gold);">04</div>
+                <h3>Conquiste Recompensas</h3>
+                <p>Receba XP, cristais e conquistas. Suba de nível e desbloqueie novos conteúdos e recompensas exclusivas.</p>
+                <div class="step-features">
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>XP progressivo</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Cristais acumuláveis</span>
+                    </div>
+                    <div class="step-feature">
+                        <i class="fas fa-check"></i>
+                        <span>Conquistas raras</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-container">
+            <div class="cta-badge">
+                <i class="fas fa-sparkles"></i>
+                <span>Comece sua jornada hoje</span>
+            </div>
+
+            <h2>
+                Pronto para<br>
+                <span>gamificar seu aprendizado?</span>
+            </h2>
+
+            <p>Junte-se a milhares de estudantes e professores que já estão transformando a educação através da gamificação.</p>
+
+            <div class="cta-benefits">
+                <div class="cta-benefit">
+                    <i class="fas fa-check"></i>
+                    <span>Sistema de XP e níveis ilimitado</span>
+                </div>
+                <div class="cta-benefit">
+                    <i class="fas fa-check"></i>
+                    <span>50+ conquistas para desbloquear</span>
+                </div>
+                <div class="cta-benefit">
+                    <i class="fas fa-check"></i>
+                    <span>Loja virtual com recompensas</span>
+                </div>
+                <div class="cta-benefit">
+                    <i class="fas fa-check"></i>
+                    <span>Rankings e competições</span>
+                </div>
+                <div class="cta-benefit">
+                    <i class="fas fa-check"></i>
+                    <span>Relatórios de progresso</span>
+                </div>
+                <div class="cta-benefit">
+                    <i class="fas fa-check"></i>
+                    <span>Suporte 24/7</span>
+                </div>
+            </div>
+
+            <a href="app/index.html" class="btn-primary" style="margin-bottom: 1.5rem;">
+                <i class="fas fa-rocket"></i> Começar Agora
+            </a>
+
+            <div class="cta-trust">
+                <span><i class="fas fa-check-circle"></i> Gratuito para começar</span>
+                <span><i class="fas fa-check-circle"></i> Sem cartão de crédito</span>
+                <span><i class="fas fa-check-circle"></i> Cancele quando quiser</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <i class="fas fa-gamepad"></i>
+                <span>EduQuest</span>
+            </div>
+            <div class="footer-links">
+                <a href="#features">Recursos</a>
+                <a href="#how-it-works">Como Funciona</a>
+                <a href="#achievements">Conquistas</a>
+                <a href="app/index.html">Entrar</a>
+            </div>
+            <div class="footer-social">
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-linkedin"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-github"></i></a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 EduQuest. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Theme Management
+        let currentTheme = 'blue';
+        const themes = ['blue', 'military', 'light'];
+        const themeNames = {
+            'blue': 'Tema Azul',
+            'military': 'Tema Militar',
+            'light': 'Tema Claro'
+        };
+        const themeIcons = {
+            'blue': 'fa-palette',
+            'military': 'fa-shield-alt',
+            'light': 'fa-sun'
+        };
+
+        function toggleTheme() {
+            const currentIndex = themes.indexOf(currentTheme);
+            const nextIndex = (currentIndex + 1) % themes.length;
+            currentTheme = themes[nextIndex];
+
+            // Apply theme
+            if (currentTheme === 'blue') {
+                document.body.removeAttribute('data-theme');
+            } else {
+                document.body.setAttribute('data-theme', currentTheme);
+            }
+
+            // Update button
+            const btn = document.getElementById('themeToggle');
+            const icon = btn.querySelector('i');
+            const text = document.getElementById('themeText');
+
+            icon.className = 'fas ' + themeIcons[currentTheme];
+            text.textContent = themeNames[currentTheme];
+
+            // Update hero text for military theme
+            updateHeroText();
+
+            // Reinitialize particles with new colors
+            initParticles();
+
+            // Save preference
+            localStorage.setItem('eduquest-theme', currentTheme);
+        }
+
+        function updateHeroText() {
+            const badgeText = document.getElementById('heroBadgeText');
+            const title1 = document.getElementById('heroTitle1');
+            const title2 = document.getElementById('heroTitle2');
+            const title3 = document.getElementById('heroTitle3');
+
+            if (currentTheme === 'military') {
+                badgeText.textContent = 'Missão: Educação de Excelência';
+                title1.textContent = 'Disciplina e Honra';
+                title2.textContent = 'na Educação';
+                title3.textContent = 'em Primeiro Lugar';
+            } else if (currentTheme === 'light') {
+                badgeText.textContent = 'Educação para Todos';
+                title1.textContent = 'Transforme seu';
+                title2.textContent = 'Aprendizado';
+                title3.textContent = 'em uma Aventura';
+            } else {
+                badgeText.textContent = 'Nova Era da Educação';
+                title1.textContent = 'Transforme seu';
+                title2.textContent = 'Aprendizado';
+                title3.textContent = 'em uma Aventura';
+            }
+        }
+
+        // Particles
+        function initParticles() {
+            const container = document.getElementById('particles-container');
+            // Clear existing particles
+            const existingParticles = container.querySelectorAll('.particle');
+            existingParticles.forEach(p => p.remove());
+
+            const particleCount = 50;
+            let colors;
+
+            if (currentTheme === 'military') {
+                colors = ['#00C853', '#FFEA00', '#6B8E3B', '#00ff41'];
+            } else if (currentTheme === 'light') {
+                colors = ['#00A651', '#FFD700', '#6B8E23', '#00D46A'];
+            } else {
+                colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00'];
+            }
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 6}s`;
+                particle.style.animationDuration = `${4 + Math.random() * 4}s`;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+                container.appendChild(particle);
+            }
+        }
+
+        // Navbar scroll effect
+        function initNavbar() {
+            const navbar = document.getElementById('navbar');
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+        }
+
+        // Smooth scroll for anchor links
+        function initSmoothScroll() {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        }
+
+        // Load saved theme
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('eduquest-theme');
+            if (savedTheme && themes.includes(savedTheme)) {
+                currentTheme = savedTheme;
+                if (currentTheme !== 'blue') {
+                    document.body.setAttribute('data-theme', currentTheme);
+                }
+
+                // Update button
+                const btn = document.getElementById('themeToggle');
+                const icon = btn.querySelector('i');
+                const text = document.getElementById('themeText');
+
+                icon.className = 'fas ' + themeIcons[currentTheme];
+                text.textContent = themeNames[currentTheme];
+
+                updateHeroText();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedTheme();
+            initParticles();
+            initNavbar();
+            initSmoothScroll();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduQuest - Gamificação Educacional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<!-- Particles Background -->
+<div id="particles-container" class="particles-container"></div>
+
+<!-- Loading Screen -->
+<div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+        <div class="loading-logo">
+            <i class="fas fa-gamepad"></i>
+        </div>
+        <div class="loading-text">Carregando...</div>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Screen -->
+<div id="login-screen" class="login-screen hidden">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <span>EduQuest</span>
+            </div>
+            <p>Sistema de Gamificação Educacional</p>
+        </div>
+        <form id="login-form" class="login-form">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="username" required placeholder="Digite seu usuário">
+            </div>
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required placeholder="Digite sua senha">
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">
+                <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+        </form>
+        <div class="login-footer">
+            <p>Usuários de teste:</p>
+            <div class="test-users">
+                <span>admin / admin123</span>
+                <span>professor1 / prof123</span>
+                <span>aluno1 / aluno123</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main App -->
+<div id="app" class="app hidden">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <span>EduQuest</span>
+            </div>
+        </div>
+        <div class="sidebar-nav">
+            <a href="#" data-page="dashboard" class="nav-item active">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" data-page="missions" class="nav-item">
+                <i class="fas fa-tasks"></i>
+                <span>Missões</span>
+            </a>
+            <a href="#" data-page="achievements" class="nav-item">
+                <i class="fas fa-trophy"></i>
+                <span>Conquistas</span>
+            </a>
+            <a href="#" data-page="rewards" class="nav-item">
+                <i class="fas fa-gift"></i>
+                <span>Loja</span>
+            </a>
+            <a href="#" data-page="disciplines" class="nav-item">
+                <i class="fas fa-book"></i>
+                <span>Disciplinas</span>
+            </a>
+            <a href="#" data-page="ranking" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Ranking</span>
+            </a>
+            <a href="#" data-page="admin" class="nav-item admin-only hidden">
+                <i class="fas fa-cog"></i>
+                <span>Admin</span>
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-details">
+                    <span id="user-name" class="user-name">Usuário</span>
+                    <span id="user-role" class="user-role">Estudante</span>
+                </div>
+            </div>
+            <button id="logout-btn" class="btn btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <button id="sidebar-toggle" class="btn btn-icon">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <i class="fas fa-star"></i>
+                    <span id="user-level">Nível 1</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-bolt"></i>
+                    <span id="user-xp">0 XP</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-gem"></i>
+                    <span id="user-coins">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Pages -->
+        <div class="pages-container">
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="page active">
+                <div class="page-header">
+                    <h1><i class="fas fa-home"></i> Dashboard</h1>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="card card-welcome">
+                        <div class="card-content">
+                            <h2>Bem-vindo de volta, <span id="welcome-name">Estudante</span>!</h2>
+                            <p>Continue sua jornada de aprendizado e conquiste novos níveis.</p>
+                            <div class="xp-bar">
+                                <div class="xp-progress" id="xp-progress"></div>
+                            </div>
+                            <p class="xp-text"><span id="current-xp">0</span> / <span id="next-level-xp">100</span> XP</p>
+                        </div>
+                    </div>
+
+                    <div class="card card-stats">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-pie"></i> Suas Estatísticas</h3>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <i class="fas fa-tasks"></i>
+                                <span class="stat-value" id="stat-missions">0</span>
+                                <span class="stat-label">Missões</span>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-trophy"></i>
+                                <span class="stat-value" id="stat-achievements">0</span>
+                                <span class="stat-label">Conquistas</span>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-gift"></i>
+                                <span class="stat-value" id="stat-rewards">0</span>
+                                <span class="stat-label">Recompensas</span>
+                            </div>
+                            <div class="stat-box">
+                                <i class="fas fa-book"></i>
+                                <span class="stat-value" id="stat-disciplines">0</span>
+                                <span class="stat-label">Disciplinas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-pending-missions">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clock"></i> Missões Pendentes</h3>
+                        </div>
+                        <div class="missions-list" id="pending-missions-list">
+                            <p class="empty-state">Nenhuma missão pendente</p>
+                        </div>
+                    </div>
+
+                    <div class="card card-recent-achievements">
+                        <div class="card-header">
+                            <h3><i class="fas fa-medal"></i> Conquistas Recentes</h3>
+                        </div>
+                        <div class="achievements-list" id="recent-achievements-list">
+                            <p class="empty-state">Nenhuma conquista ainda</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Missions Page -->
+            <div id="page-missions" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-tasks"></i> Missões</h1>
+                </div>
+                <div class="missions-container">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="available">Disponíveis</button>
+                        <button class="tab-btn" data-tab="pending">Pendentes</button>
+                        <button class="tab-btn" data-tab="completed">Completadas</button>
+                    </div>
+                    <div class="tab-content active" id="tab-available">
+                        <div class="missions-grid" id="available-missions-grid">
+                            <p class="empty-state">Carregando missões...</p>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-pending">
+                        <div class="missions-grid" id="pending-missions-grid">
+                            <p class="empty-state">Carregando missões...</p>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-completed">
+                        <div class="missions-grid" id="completed-missions-grid">
+                            <p class="empty-state">Carregando missões...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievements Page -->
+            <div id="page-achievements" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-trophy"></i> Conquistas</h1>
+                </div>
+                <div class="achievements-container">
+                    <div class="achievements-grid" id="achievements-grid">
+                        <p class="empty-state">Carregando conquistas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rewards Page -->
+            <div id="page-rewards" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-gift"></i> Loja de Recompensas</h1>
+                    <p class="coins-display">
+                        <i class="fas fa-gem"></i>
+                        <span id="shop-coins">0</span> cristais
+                    </p>
+                </div>
+                <div class="rewards-container">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="shop">Loja</button>
+                        <button class="tab-btn" data-tab="my-rewards">Minhas Recompensas</button>
+                    </div>
+                    <div class="tab-content active" id="tab-shop">
+                        <div class="rewards-grid" id="shop-rewards-grid">
+                            <p class="empty-state">Carregando recompensas...</p>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="tab-my-rewards">
+                        <div class="rewards-grid" id="my-rewards-grid">
+                            <p class="empty-state">Carregando recompensas...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disciplines Page -->
+            <div id="page-disciplines" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-book"></i> Disciplinas</h1>
+                    <p id="disciplines-subtitle" class="page-subtitle"></p>
+                </div>
+                <div class="disciplines-container">
+                    <!-- Container para disciplinas do professor -->
+                    <div id="teacher-disciplines-container" class="hidden"></div>
+
+                    <!-- Container para todas as disciplinas (alunos e admin) -->
+                    <div class="disciplines-grid" id="disciplines-grid">
+                        <p class="empty-state">Carregando disciplinas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ranking Page -->
+            <div id="page-ranking" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-chart-line"></i> Ranking</h1>
+                </div>
+                <div class="ranking-container">
+                    <div class="ranking-list" id="ranking-list">
+                        <p class="empty-state">Carregando ranking...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Page -->
+            <div id="page-admin" class="page admin-only">
+                <div class="page-header">
+                    <h1><i class="fas fa-cog"></i> Painel Administrativo</h1>
+                </div>
+                <div class="admin-container">
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" data-admin-tab="users">Usuários</button>
+                        <button class="admin-tab-btn" data-admin-tab="missions">Missões</button>
+                        <button class="admin-tab-btn" data-admin-tab="achievements">Conquistas</button>
+                        <button class="admin-tab-btn" data-admin-tab="rewards">Recompensas</button>
+                        <button class="admin-tab-btn" data-admin-tab="disciplines">Disciplinas</button>
+                    </div>
+
+                    <div class="admin-tab-content active" id="admin-tab-users">
+                        <div class="admin-section">
+                            <div class="admin-section-header">
+                                <h3><i class="fas fa-users"></i> Gerenciar Usuários</h3>
+                                <button class="btn btn-primary" onclick="showAddUserModal()">
+                                    <i class="fas fa-plus"></i> Novo Usuário
+                                </button>
+                            </div>
+                            <div class="admin-list" id="admin-users-list">
+                                <p class="empty-state">Carregando usuários...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-tab-content" id="admin-tab-missions">
+                        <div class="admin-section">
+                            <div class="admin-section-header">
+                                <h3><i class="fas fa-tasks"></i> Gerenciar Missões</h3>
+                                <button class="btn btn-primary" onclick="showAddMissionModal()">
+                                    <i class="fas fa-plus"></i> Nova Missão
+                                </button>
+                            </div>
+                            <div class="admin-list" id="admin-missions-list">
+                                <p class="empty-state">Carregando missões...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-tab-content" id="admin-tab-achievements">
+                        <div class="admin-section">
+                            <div class="admin-section-header">
+                                <h3><i class="fas fa-trophy"></i> Gerenciar Conquistas</h3>
+                                <button class="btn btn-primary" onclick="showAddAchievementModal()">
+                                    <i class="fas fa-plus"></i> Nova Conquista
+                                </button>
+                            </div>
+                            <div class="admin-list" id="admin-achievements-list">
+                                <p class="empty-state">Carregando conquistas...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-tab-content" id="admin-tab-rewards">
+                        <div class="admin-section">
+                            <div class="admin-section-header">
+                                <h3><i class="fas fa-gift"></i> Gerenciar Recompensas</h3>
+                                <button class="btn btn-primary" onclick="showAddRewardModal()">
+                                    <i class="fas fa-plus"></i> Nova Recompensa
+                                </button>
+                            </div>
+                            <div class="admin-list" id="admin-rewards-list">
+                                <p class="empty-state">Carregando recompensas...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-tab-content" id="admin-tab-disciplines">
+                        <div class="admin-section">
+                            <div class="admin-section-header">
+                                <h3><i class="fas fa-book"></i> Gerenciar Disciplinas</h3>
+                                <button class="btn btn-primary" onclick="showAddDisciplineModal()">
+                                    <i class="fas fa-plus"></i> Nova Disciplina
+                                </button>
+                            </div>
+                            <div class="admin-list" id="admin-disciplines-list">
+                                <p class="empty-state">Carregando disciplinas...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Genérico -->
+<div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal" id="modal">
+        <div class="modal-header">
+            <h3 id="modal-title">Título</h3>
+            <button class="btn btn-close" id="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="modal-body">
+            <!-- Content will be injected here -->
+        </div>
+        <div class="modal-footer" id="modal-footer">
+            <!-- Buttons will be injected here -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar/editar Missão -->
+<div id="modal-mission" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="mission-modal-title">Nova Missão</h3>
+            <button class="btn btn-close" onclick="closeModal('modal-mission')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="mission-form" onsubmit="event.preventDefault(); saveMission();">
+                <input type="hidden" id="mission-id">
+                <div class="form-group">
+                    <label>Nome da Missão *</label>
+                    <input type="text" id="mission-name" required class="form-control" placeholder="Ex: Missão 1 - Introdução">
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="mission-description" rows="3" class="form-control" placeholder="Descreva o que o aluno precisa fazer..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>XP de Recompensa *</label>
+                        <input type="number" id="mission-xp" required class="form-control" min="0" value="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Cristais de Recompensa *</label>
+                        <input type="number" id="mission-coins" required class="form-control" min="0" value="10">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Disciplina (opcional)</label>
+                    <select id="mission-discipline" class="form-control">
+                        <option value="">Todas as disciplinas</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-mission')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveMission()">Salvar Missão</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar/editar Conquista -->
+<div id="modal-achievement" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="achievement-modal-title">Nova Conquista</h3>
+            <button class="btn btn-close" onclick="closeModal('modal-achievement')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="achievement-form" onsubmit="event.preventDefault(); saveAchievement();">
+                <input type="hidden" id="achievement-id">
+                <div class="form-group">
+                    <label>Nome da Conquista *</label>
+                    <input type="text" id="achievement-name" required class="form-control" placeholder="Ex: Mestre das Missões">
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="achievement-description" rows="3" class="form-control" placeholder="Descreva como obter esta conquista..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ícone (emoji)</label>
+                        <input type="text" id="achievement-icon" value="🏆" class="form-control" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Pontos de Conquista *</label>
+                        <input type="number" id="achievement-points" required class="form-control" min="0" value="100">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-achievement')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveAchievement()">Salvar Conquista</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar/editar Recompensa -->
+<div id="modal-reward" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="reward-modal-title">Nova Recompensa</h3>
+            <button class="btn btn-close" onclick="closeModal('modal-reward')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="reward-form" onsubmit="event.preventDefault(); saveReward();">
+                <input type="hidden" id="reward-id">
+                <div class="form-group">
+                    <label>Nome da Recompensa *</label>
+                    <input type="text" id="reward-name" required class="form-control" placeholder="Ex: Camiseta EduQuest">
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="reward-description" rows="3" class="form-control" placeholder="Descreva a recompensa..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ícone (emoji)</label>
+                        <input type="text" id="reward-icon" value="🎁" class="form-control" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Custo (Cristais) *</label>
+                        <input type="number" id="reward-cost" required class="form-control" min="0" value="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Recompensa</label>
+                    <select id="reward-type" class="form-control">
+                        <option value="item">Item</option>
+                        <option value="vantagem">Vantagem</option>
+                        <option value="desconto">Desconto</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-reward')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveReward()">Salvar Recompensa</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar/editar Disciplina -->
+<!-- Modal para adicionar/editar Disciplina -->
+<div id="modal-discipline" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="discipline-modal-title">Nova Disciplina</h3>
+            <button class="btn btn-close" onclick="closeModal('modal-discipline')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="discipline-form" onsubmit="event.preventDefault(); saveDiscipline();">
+                <input type="hidden" id="discipline-id">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Código da Disciplina *</label>
+                        <input type="text" id="discipline-code" required class="form-control" placeholder="Ex: MAT101">
+                    </div>
+                    <div class="form-group">
+                        <label>Nome da Disciplina *</label>
+                        <input type="text" id="discipline-name" required class="form-control" placeholder="Ex: Matemática Básica">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Carga Horária (horas) *</label>
+                        <input type="number" id="discipline-hours" required class="form-control" min="0" value="60">
+                    </div>
+                    <div class="form-group">
+                        <label>Ano/Turma</label>
+                        <input type="text" id="discipline-year" class="form-control" placeholder="Ex: 2024/1">
+                    </div>
+                </div>
+
+                <!-- Seletor de série para disciplina -->
+                <div class="form-group">
+                    <div id="discipline-grade-container"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Professor Responsável</label>
+                    <select id="discipline-professor" class="form-control">
+                        <option value="">Selecione um professor</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-discipline')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveDiscipline()">Salvar Disciplina</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar/editar Usuário -->
+<div id="modal-user" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="user-modal-title">Novo Usuário</h3>
+            <button class="btn btn-close" onclick="closeModal('modal-user')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="user-form" onsubmit="event.preventDefault(); saveUser();">
+                <input type="hidden" id="user-id">
+                <div class="form-group">
+                    <label>Nome *</label>
+                    <input type="text" id="user-fullname" required class="form-control" placeholder="Nome completo">
+                </div>
+                <div class="form-group">
+                    <label>CPF *</label>
+                    <input type="text" id="user-cpf" required class="form-control" placeholder="Apenas números">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Função *</label>
+                        <select id="user-role-select" class="form-control">
+                            <option value="student">Estudante</option>
+                            <option value="teacher">Professor</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Senha</label>
+                        <input type="text" id="user-password" class="form-control" placeholder="Deixe em branco para gerar automática">
+                    </div>
+                </div>
+                <!-- Seletor de série para estudantes -->
+                <div class="form-group student-fields">
+                    <div id="student-grade-container"></div>
+                </div>
+                <div class="form-group student-fields">
+                    <label>Matrícula (para estudantes)</label>
+                    <input type="text" id="user-matricula" class="form-control" placeholder="Número de matrícula">
+                </div>
+                <div class="form-group student-fields">
+                    <label>Curso (para estudantes)</label>
+                    <input type="text" id="user-curso" class="form-control" placeholder="Ex: Engenharia de Software">
+                </div>
+                <div class="form-group teacher-fields hidden">
+                    <label>Departamento (para professores)</label>
+                    <input type="text" id="user-departamento" class="form-control" placeholder="Ex: Ciência da Computação">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-user')">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveUser()">Salvar Usuário</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Scripts -->
+<!-- Scripts ordenados por dependência -->
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/grade-selector.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/missions.js"></script>
+<script src="js/achievements.js"></script>
+<script src="js/rewards.js"></script>
+<script src="js/teacher.js"></script>
+<script src="js/disciplines.js"></script>
+<script src="js/ranking.js"></script>
+<!-- Admin scripts -->
+<script src="js/admin/admin.js"></script>
+<script src="js/admin/admin-users.js"></script>
+<script src="js/admin/admin-missions.js"></script>
+<script src="js/admin/admin-achievements.js"></script>
+<script src="js/admin/admin-rewards.js"></script>
+<script src="js/admin/admin-disciplines.js"></script>
+<!-- Main app -->
+<script src="js/app.js"></script>
+</body>
+</html>
