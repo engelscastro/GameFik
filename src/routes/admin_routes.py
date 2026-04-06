@@ -7,7 +7,7 @@ Gerencia alunos e professores no painel administrativo
 from functools import wraps
 from flask import Blueprint, jsonify, request, session
 from src.models.user import db, User
-from src.models.academic import Student, Professor, Discipline
+from src.models.academic import Student, Professor, Enrollment, Discipline
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -28,6 +28,65 @@ def admin_required(f):
 
         return f(*args, **kwargs)
     return decorated_function
+
+
+# ============================================================================
+# FUNÇÕES AUXILIARES PARA MATRÍCULAS AUTOMÁTICAS
+# ============================================================================
+
+def enroll_student_in_all_disciplines_of_year(student_id, ano_turma):
+    """Matricula o aluno em todas as disciplinas do mesmo ano/turma"""
+    if not ano_turma:
+        return
+    disciplines = Discipline.query.filter_by(ano_turma=ano_turma).all()
+    for disc in disciplines:
+        existing = Enrollment.query.filter_by(
+            student_id=student_id,
+            discipline_id=disc.id,
+            status='active'
+        ).first()
+        if not existing:
+            enrollment = Enrollment(
+                student_id=student_id,
+                discipline_id=disc.id,
+                status='active'
+            )
+            db.session.add(enrollment)
+    db.session.commit()
+
+
+def sync_student_enrollments(student_id, old_ano_turma, new_ano_turma):
+    """Sincroniza matrículas do aluno conforme mudança de ano/turma"""
+    if old_ano_turma == new_ano_turma:
+        return
+
+    # Remove matrículas em disciplinas do antigo ano/turma
+    if old_ano_turma:
+        old_disciplines = Discipline.query.filter_by(ano_turma=old_ano_turma).all()
+        for disc in old_disciplines:
+            Enrollment.query.filter_by(
+                student_id=student_id,
+                discipline_id=disc.id
+            ).delete()
+
+    # Adiciona matrículas nas disciplinas do novo ano/turma
+    if new_ano_turma:
+        new_disciplines = Discipline.query.filter_by(ano_turma=new_ano_turma).all()
+        for disc in new_disciplines:
+            existing = Enrollment.query.filter_by(
+                student_id=student_id,
+                discipline_id=disc.id,
+                status='active'
+            ).first()
+            if not existing:
+                enrollment = Enrollment(
+                    student_id=student_id,
+                    discipline_id=disc.id,
+                    status='active'
+                )
+                db.session.add(enrollment)
+
+    db.session.commit()
 
 
 # ============================================================================
@@ -119,6 +178,9 @@ def create_student():
         db.session.add(student)
         db.session.commit()
 
+        # Auto‑matrícula nas disciplinas do ano/turma
+        enroll_student_in_all_disciplines_of_year(student.id, student.ano_turma)
+
         return jsonify({
             'success': True,
             'message': 'Aluno criado com sucesso!',
@@ -139,13 +201,14 @@ def create_student():
 @admin_bp.route('/students/<int:student_id>', methods=['PUT'])
 @admin_required
 def update_student(student_id):
-    """Atualizar dados do aluno"""
+    """Atualizar dados do aluno e sincronizar matrículas se o ano/turma mudar"""
     try:
         student = Student.query.get(student_id)
         if not student:
             return jsonify({'success': False, 'error': 'Aluno não encontrado'}), 404
 
         data = request.json
+        old_ano = student.ano_turma  # guardar antes da alteração
 
         if 'nome' in data:
             student.nome = data['nome']
@@ -157,6 +220,10 @@ def update_student(student_id):
             student.nivel_ensino = data['nivel_ensino']
 
         db.session.commit()
+
+        # Sincronizar matrículas se o ano/turma foi alterado
+        if 'ano_turma' in data:
+            sync_student_enrollments(student.id, old_ano, student.ano_turma)
 
         return jsonify({'success': True, 'message': 'Aluno atualizado com sucesso'})
     except Exception as e:
@@ -176,7 +243,6 @@ def delete_student(student_id):
         user = User.query.get(student.user_id)
 
         # Excluir matrículas primeiro
-        from src.models.academic import Enrollment
         Enrollment.query.filter_by(student_id=student.id).delete()
 
         db.session.delete(student)
@@ -360,8 +426,6 @@ def get_disciplines_list():
 def get_student_enrollments(student_id):
     """Listar matrículas de um aluno"""
     try:
-        from src.models.academic import Enrollment
-
         enrollments = Enrollment.query.filter_by(student_id=student_id).all()
         result = []
 

@@ -128,6 +128,9 @@ function renderTeacherDisciplines(disciplines) {
                         <button class="btn btn-sm btn-secondary" onclick="createMissionForDiscipline(${discipline.id})">
                             <i class="fas fa-plus"></i> Nova Missão
                         </button>
+                        <button class="btn btn-sm btn-info" onclick="openDisciplineChat(${discipline.id}, '${escapeHtml(discipline.nome)}')">
+                            <i class="fas fa-comment"></i> Chat
+                        </button>
                     </div>
                 </div>
             `).join('')}

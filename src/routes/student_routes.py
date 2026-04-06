@@ -94,3 +94,34 @@ def delete_student(student_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+    # src/routes/student_routes.py
+# (adicione o import de Enrollment e Discipline no topo)
+from src.models.academic import Student, Enrollment, Discipline
+
+# Função auxiliar (pode ficar dentro do arquivo)
+def enroll_student_in_all_disciplines_of_year(student_id, ano_turma):
+    if not ano_turma:
+        return
+    disciplines = Discipline.query.filter_by(ano_turma=ano_turma).all()
+    for disc in disciplines:
+        existing = Enrollment.query.filter_by(
+            student_id=student_id,
+            discipline_id=disc.id,
+            status='active'
+        ).first()
+        if not existing:
+            enrollment = Enrollment(
+                student_id=student_id,
+                discipline_id=disc.id,
+                status='active'
+            )
+            db.session.add(enrollment)
+    db.session.commit()
+
+    # Dentro da função create_student, após salvar o student:
+    db.session.add(student)
+    db.session.commit()
+    # Auto‑matrícula
+    enroll_student_in_all_disciplines_of_year(student.id, student.ano_turma)
+    # ...

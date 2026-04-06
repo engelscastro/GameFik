@@ -21,7 +21,7 @@ from src.routes.professor_routes import professor_bp
 from src.routes.student_routes import student_bp
 from src.routes.enrollment_routes import enrollment_bp
 from src.routes.grade_routes import grade_bp
-from src.routes.chat_routes import chat_bp
+from src.blueprints.chat import chat_bp
 
 # ============= CONFIGURAR PATHS =============
 currentdir = os.path.dirname(__file__)  # Pasta src onde está o main.py

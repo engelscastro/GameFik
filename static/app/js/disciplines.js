@@ -30,7 +30,6 @@ async function loadDisciplines() {
 function renderDisciplines(disciplines) {
     const container = document.getElementById('disciplines-grid');
 
-    // Esconder container do professor e mostrar o normal
     const teacherContainer = document.getElementById('teacher-disciplines-container');
     if (teacherContainer) teacherContainer.classList.add('hidden');
     if (container) container.classList.remove('hidden');
@@ -51,6 +50,11 @@ function renderDisciplines(disciplines) {
             ${discipline.professor_nome ? `
                 <p class="discipline-professor"><i class="fas fa-user"></i> ${escapeHtml(discipline.professor_nome)}</p>
             ` : ''}
+            <div class="discipline-actions" style="margin-top: 1rem;">
+                <button class="btn btn-sm btn-info" onclick="openDisciplineChat(${discipline.id}, '${escapeHtml(discipline.nome)}')">
+                    <i class="fas fa-comment"></i> Chat
+                </button>
+            </div>
         </div>
     `).join('');
 }

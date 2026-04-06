@@ -1588,3 +1588,13 @@ select.form-control option {
     box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
     transform: translateY(-2px);
 }
+
+/* botão styles do chat */
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8, #0f6674);
+    color: #fff;
+}
+.btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(23, 162, 184, 0.5);
+}

@@ -708,3 +708,38 @@ def get_teacher_stats():
     except Exception as e:
         print(f"❌ Erro em get_teacher_stats: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+    # src/routes/discipline_routes.py
+from src.models.academic import Student, Enrollment
+
+def enroll_all_students_of_year(discipline_id, ano_turma):
+    if not ano_turma:
+        return
+    students = Student.query.filter_by(ano_turma=ano_turma).all()
+    for student in students:
+        existing = Enrollment.query.filter_by(
+            student_id=student.id,
+            discipline_id=discipline_id,
+            status='active'
+        ).first()
+        if not existing:
+            enrollment = Enrollment(
+                student_id=student.id,
+                discipline_id=discipline_id,
+                status='active'
+            )
+            db.session.add(enrollment)
+    db.session.commit()
+
+    # Dentro de create_discipline, após salvar a disciplina:
+    db.session.add(discipline)
+    db.session.commit()
+    enroll_all_students_of_year(discipline.id, discipline.ano_turma)
+
+    # Dentro de update_discipline, se ano_turma for alterado:
+    old_ano = discipline.ano_turma
+    if 'ano_turma' in data:
+        discipline.ano_turma = data['ano_turma']
+        # Você pode optar por remover matrículas antigas? (complexo, mas pode manter)
+        # Apenas adiciona novos alunos:
+        enroll_all_students_of_year(discipline.id, discipline.ano_turma)
