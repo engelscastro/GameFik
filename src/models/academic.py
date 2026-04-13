@@ -260,7 +260,13 @@ class ChatMessage(db.Model):
     is_pinned = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # NOVOS CAMPOS (adicionar)
+    reactions = db.Column(db.JSON, default=dict)           # {"👍": [user_id1, user_id2], ...}
+    reply_to = db.Column(db.Integer, db.ForeignKey('chat_message.id'), nullable=True)
+
+    # Relacionamentos
     user = db.relationship('User', backref='chat_messages')
+    parent = db.relationship('ChatMessage', remote_side=[id], backref='replies')
 
     def to_dict(self):
         user_name = self.user.username if self.user else "Unknown"
@@ -274,6 +280,17 @@ class ChatMessage(db.Model):
             if professor and professor.nome:
                 user_name = professor.nome
 
+        # Dados da mensagem original (se for resposta)
+        parent_info = None
+        if self.reply_to:
+            parent_msg = ChatMessage.query.get(self.reply_to)
+            if parent_msg:
+                parent_info = {
+                    'id': parent_msg.id,
+                    'user_name': parent_msg.user.username,
+                    'content': parent_msg.content[:100]
+                }
+
         return {
             'id': self.id,
             'chat_id': self.chat_id,
@@ -285,7 +302,10 @@ class ChatMessage(db.Model):
             'file_url': self.file_url,
             'is_pinned': self.is_pinned,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'is_own_message': self.user_id == session.get('user_id') if session else False
+            'is_own_message': self.user_id == session.get('user_id') if session else False,
+            'reactions': self.reactions or {},
+            'reply_to': self.reply_to,
+            'parent_message': parent_info
         }
 
 class ClassActivity(db.Model):

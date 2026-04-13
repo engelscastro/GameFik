@@ -51,31 +51,30 @@ db.init_app(app)
 # ============= REGISTRAR BLUEPRINTS =============
 print("🚀 Registrando blueprints...")
 try:
-    # Registrar todos os blueprints aqui (centralizado no main)
+    # Lista de blueprints com seus respectivos prefixos
     blueprints = [
-        ("user", user_bp),
-        ("mission", mission_bp),
-        ("achievement", achievement_bp),
-        ("reward", reward_bp),
-        ("discipline", discipline_bp),
-        ("admin", admin_bp),         # url_prefix do blueprint: '/admin' → final: /api/admin/...
-        ("professor", professor_bp),
-        ("student", student_bp),
-        ("enrollment", enrollment_bp),
-        ("grade", grade_bp),
-        ("chat", chat_bp),
+        ("user", user_bp, "/api"),
+        ("mission", mission_bp, "/api"),
+        ("achievement", achievement_bp, "/api"),
+        ("reward", reward_bp, "/api"),
+        ("discipline", discipline_bp, "/api"),
+        ("professor", professor_bp, "/api"),
+        ("student", student_bp, "/api"),
+        ("enrollment", enrollment_bp, "/api"),
+        ("grade", grade_bp, "/api"),
+        ("chat", chat_bp, "/api"),
+        ("admin", admin_bp, "/api/admin"),   # admin com prefixo separado
     ]
 
-    for name, bp in blueprints:
-        app.register_blueprint(bp, url_prefix="/api")
-        print(f"✅ {name} registrado com sucesso!")
+    for name, bp, prefix in blueprints:
+        app.register_blueprint(bp, url_prefix=prefix)
+        print(f"✅ {name} registrado com sucesso (prefixo: {prefix})")
 
     print("\n✅ Todos os blueprints registrados com sucesso!")
 
 except Exception as e:
     print(f"❌ Erro crítico ao registrar blueprints: {e}")
     import traceback
-
     traceback.print_exc()
     sys.exit(1)
 

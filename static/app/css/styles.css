@@ -1598,3 +1598,54 @@ select.form-control option {
     transform: translateY(-2px);
     box-shadow: 0 0 15px rgba(23, 162, 184, 0.5);
 }
+
+/* Melhorias do chat */
+.chat-message {
+    position: relative;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border-radius: 0.5rem;
+    transition: background 0.2s;
+}
+.chat-message.own-message {
+    background: rgba(0, 255, 255, 0.1);
+    border-left: 3px solid var(--primary-neon);
+}
+.message-reply {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    border-left: 2px solid var(--primary-neon);
+    padding-left: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.message-reactions {
+    display: flex;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+}
+.reaction-btn {
+    background: var(--bg-darker);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.reaction-btn:hover {
+    background: var(--primary-neon);
+    color: black;
+}
+.btn-icon-small {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem;
+    opacity: 0.5;
+}
+.btn-icon-small:hover {
+    opacity: 1;
+}
+.chat-messages {
+    scroll-behavior: smooth;
+}

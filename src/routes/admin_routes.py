@@ -9,7 +9,7 @@ from flask import Blueprint, jsonify, request, session
 from src.models.user import db, User
 from src.models.academic import Student, Professor, Enrollment, Discipline
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+admin_bp = Blueprint('admin', __name__)
 
 
 # ============================================================================

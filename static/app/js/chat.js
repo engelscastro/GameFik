@@ -1,151 +1,272 @@
-// ==================== SISTEMA DE CHAT POR DISCIPLINA ====================
+// ==================== CHAT COMPLETO COM TODAS AS MELHORIAS ====================
 
 let currentChatDisciplineId = null;
+let currentChatDisciplineName = '';
 let chatAutoRefresh = null;
+let typingTimeout = null;
+let isTyping = false;
+let currentPage = 1;
+let hasMoreMessages = true;
+let isLoadingMessages = false;
+let lastMessageId = null;
+let unreadCount = 0;
+let originalTitle = document.title;
+let searchTerm = '';
+let currentReplyTo = null;
+let notificationSound = null;
 
-// Abrir chat da disciplina
+// Inicializar som (opcional)
+function initNotificationSound() {
+    notificationSound = new Audio('/static/sounds/notification.mp3');
+    notificationSound.volume = 0.3;
+}
+
+function playNotificationSound() {
+    if (notificationSound) notificationSound.play().catch(e => console.log);
+}
+
+// Badge de não lidas
+function updateUnreadBadge(count) {
+    const badge = document.getElementById('chat-unread-badge');
+    if (badge) {
+        badge.textContent = count > 9 ? '9+' : count;
+        badge.style.display = count ? 'inline-block' : 'none';
+    }
+    if (count && document.hidden) {
+        document.title = `(${count}) ${originalTitle}`;
+    } else {
+        document.title = originalTitle;
+    }
+}
+
+// Notificação do navegador
+function showBrowserNotification(title, body) {
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/static/favicon.ico' });
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+}
+
+// Abrir chat
 async function openDisciplineChat(disciplineId, disciplineName) {
-    console.log(`🎯 Abrindo chat da disciplina ${disciplineId}: ${disciplineName}`);
+    currentChatDisciplineId = disciplineId;
+    currentChatDisciplineName = disciplineName;
+    currentPage = 1;
+    hasMoreMessages = true;
+    isLoadingMessages = false;
+    searchTerm = '';
+    currentReplyTo = null;
 
-    // Verificar/criar chat
     const chatReady = await ensureChatExists(disciplineId);
     if (!chatReady) {
-        showToast('❌ Não foi possível acessar o chat desta disciplina', 'error');
+        showToast('❌ Não foi possível acessar o chat', 'error');
         return;
     }
 
-    currentChatDisciplineId = disciplineId;
     document.getElementById('chatDisciplineName').textContent = `Chat - ${disciplineName}`;
-
-    // Abrir modal
     const modal = document.getElementById('disciplineChatModal');
     modal.classList.remove('hidden');
 
-    // Inicializar chat
-    setTimeout(() => {
-        loadChatMessages();
-        startChatAutoRefresh();
-        // Focar no input
-        document.getElementById('chat-message-input').focus();
-    }, 100);
+    unreadCount = 0;
+    updateUnreadBadge(0);
+
+    await loadChatMessages(true);
+    startChatAutoRefresh();
+    document.getElementById('chat-message-input').focus();
 }
 
-// Garantir que o chat existe no backend
 async function ensureChatExists(disciplineId) {
     try {
-        const response = await fetch(`/api/disciplines/${disciplineId}/chat/ensure`, {
-            method: 'POST',
-            credentials: 'include'
-        });
-        const data = await response.json();
+        const res = await fetch(`/api/disciplines/${disciplineId}/chat/ensure`, { method: 'POST', credentials: 'include' });
+        const data = await res.json();
         return data.success;
-    } catch (error) {
-        console.error('Erro ao verificar chat:', error);
-        return false;
-    }
+    } catch(e) { return false; }
 }
 
-// Carregar mensagens do chat
-async function loadChatMessages() {
+// Carregar mensagens (com paginação e busca)
+async function loadChatMessages(reset = false) {
     if (!currentChatDisciplineId) return;
+    if (reset) {
+        currentPage = 1;
+        hasMoreMessages = true;
+        document.getElementById('chat-messages').innerHTML = '';
+    }
+    if (isLoadingMessages || (!hasMoreMessages && !reset)) return;
+    isLoadingMessages = true;
 
     try {
-        const response = await fetch(`/api/disciplines/${currentChatDisciplineId}/chat`, {
-            credentials: 'include'
-        });
-        const data = await response.json();
-
+        let url = `/api/disciplines/${currentChatDisciplineId}/chat?page=${currentPage}&per_page=20`;
+        if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
+        const res = await fetch(url, { credentials: 'include' });
+        const data = await res.json();
         if (data.success) {
-            displayChatMessages(data.messages);
-            updateChatStatus(`${data.total_messages} mensagens`);
-        } else {
-            updateChatStatus('Erro ao carregar');
+            if (reset) {
+                renderMessages(data.messages);
+            } else {
+                prependMessages(data.messages);
+                const container = document.getElementById('chat-messages');
+                const oldScrollHeight = container.scrollHeight;
+                // manter posição relativa
+                if (container.scrollTop === 0) {
+                    container.scrollTop = container.scrollHeight - oldScrollHeight;
+                }
+            }
+            hasMoreMessages = data.has_more;
+            currentPage++;
         }
-    } catch (error) {
-        console.error('Erro ao carregar mensagens:', error);
-        updateChatStatus('Erro de conexão');
-    }
+    } catch(e) { console.error(e); }
+    finally { isLoadingMessages = false; }
 }
 
-// Exibir mensagens
-function displayChatMessages(messages) {
+function prependMessages(messages) {
     const container = document.getElementById('chat-messages');
-    if (!container) return;
-
-    if (!messages || messages.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-comment-dots"></i>
-                <p>Nenhuma mensagem ainda</p>
-                <small>Seja o primeiro a enviar uma mensagem!</small>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = messages.map(message => {
-        const isOwn = message.user_id === state.user?.id;
-        const isAnnouncement = message.message_type === 'announcement';
-        return `
-            <div class="chat-message ${isOwn ? 'own-message' : ''} ${isAnnouncement ? 'announcement' : ''}">
-                <div class="message-header">
-                    <strong>${escapeHtml(message.user_name || 'Usuário')}</strong>
-                    <small>${formatChatTime(message.created_at)}</small>
-                    ${message.is_pinned ? '<span class="badge">📌 Fixada</span>' : ''}
-                    ${isAnnouncement ? '<span class="badge announcement">📢 Anúncio</span>' : ''}
-                </div>
-                <div class="message-content">${escapeHtml(message.content)}</div>
-                ${(isOwn || state.user?.role !== 'student') ? `
-                    <div class="message-actions">
-                        ${isOwn ? `<button class="btn-icon-small" onclick="deleteChatMessage(${message.id})" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
-                        ${(state.user?.role === 'teacher' || state.user?.role === 'admin') ? `
-                            <button class="btn-icon-small" onclick="togglePinMessage(${message.id})" title="${message.is_pinned ? 'Desafixar' : 'Fixar'}">
-                                <i class="fas ${message.is_pinned ? 'fa-thumbtack' : 'fa-thumbtack'}"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }).join('');
-
-    // Scroll para o final
-    setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-    }, 50);
+    const fragment = document.createDocumentFragment();
+    messages.reverse().forEach(msg => fragment.appendChild(createMessageElement(msg)));
+    if (container.firstChild) container.insertBefore(fragment, container.firstChild);
+    else container.appendChild(fragment);
 }
 
-// Enviar mensagem
+function renderMessages(messages) {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = '';
+    messages.forEach(msg => container.appendChild(createMessageElement(msg)));
+    attachReactionEvents();
+    attachScrollListener();
+    scrollToBottom();
+}
+
+function createMessageElement(msg) {
+    const div = document.createElement('div');
+    div.className = `chat-message ${msg.user_id === state.user?.id ? 'own-message' : ''} ${msg.message_type === 'announcement' ? 'announcement' : ''}`;
+    div.dataset.id = msg.id;
+
+    let replyHtml = '';
+    if (msg.reply_to && msg.parent_message) {
+        replyHtml = `<div class="message-reply">↪️ <strong>${escapeHtml(msg.parent_message.user_name)}</strong>: ${escapeHtml(msg.parent_message.content)}</div>`;
+    }
+
+    let reactionsHtml = '';
+    if (msg.reactions) {
+        const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+        reactionsHtml = `<div class="message-reactions">`;
+        for (const emoji of emojis) {
+            const count = msg.reactions[emoji]?.length || 0;
+            reactionsHtml += `<button class="reaction-btn" data-emoji="${emoji}" data-id="${msg.id}">${emoji} ${count ? count : ''}</button>`;
+        }
+        reactionsHtml += `</div>`;
+    }
+
+    div.innerHTML = `
+        <div class="message-header">
+            <strong>${escapeHtml(msg.user_name)}</strong>
+            <small>${formatChatTime(msg.created_at)}</small>
+            ${msg.is_pinned ? '<span class="badge">📌 Fixada</span>' : ''}
+            ${msg.message_type === 'announcement' ? '<span class="badge announcement">📢 Anúncio</span>' : ''}
+        </div>
+        ${replyHtml}
+        <div class="message-content">${formatMessageText(msg.content)}</div>
+        ${reactionsHtml}
+        <div class="message-actions">
+            <button class="btn-icon-small" onclick="replyToMessage(${msg.id}, '${escapeHtml(msg.user_name)}', '${escapeHtml(msg.content)}')" title="Responder">↩️</button>
+            <button class="btn-icon-small" onclick="copyMessage(${msg.id})" title="Copiar">📋</button>
+            ${msg.user_id === state.user?.id ? `<button class="btn-icon-small" onclick="deleteChatMessage(${msg.id})" title="Excluir">🗑️</button>` : ''}
+            ${(state.user?.role === 'teacher' || state.user?.role === 'admin') ? `<button class="btn-icon-small" onclick="togglePinMessage(${msg.id})" title="${msg.is_pinned ? 'Desafixar' : 'Fixar'}">📌</button>` : ''}
+        </div>
+    `;
+    return div;
+}
+
+function formatMessageText(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+    html = html.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+    return html;
+}
+
+function attachReactionEvents() {
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.removeEventListener('click', reactionHandler);
+        btn.addEventListener('click', reactionHandler);
+    });
+}
+
+async function reactionHandler(e) {
+    const btn = e.currentTarget;
+    const messageId = btn.dataset.id;
+    const emoji = btn.dataset.emoji;
+    await addReaction(messageId, emoji);
+}
+
+async function addReaction(messageId, emoji) {
+    try {
+        const res = await fetch(`/api/chat/messages/${messageId}/react`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ reaction: emoji })
+        });
+        if (res.ok) await loadChatMessages(true);
+    } catch(e) { console.error(e); }
+}
+
+function attachScrollListener() {
+    const container = document.getElementById('chat-messages');
+    container.removeEventListener('scroll', scrollHandler);
+    container.addEventListener('scroll', scrollHandler);
+}
+
+function scrollHandler() {
+    const container = document.getElementById('chat-messages');
+    if (container.scrollTop === 0 && hasMoreMessages && !isLoadingMessages) {
+        loadChatMessages(false);
+    }
+}
+
+function replyToMessage(messageId, userName, content) {
+    currentReplyTo = { id: messageId, user: userName, content: content };
+    const input = document.getElementById('chat-message-input');
+    input.value = `@${userName} `;
+    input.focus();
+    showToast(`Respondendo a ${userName}`, 'info');
+}
+
 async function sendChatMessage() {
     const input = document.getElementById('chat-message-input');
-    const content = input.value.trim();
+    let content = input.value.trim();
+    if (!content) return;
+
+    let replyToId = null;
+    if (currentReplyTo) {
+        replyToId = currentReplyTo.id;
+        currentReplyTo = null;
+    }
+
     const button = document.getElementById('send-chat-btn');
-
-    if (!content || !currentChatDisciplineId) return;
-
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
     try {
-        const response = await fetch(`/api/disciplines/${currentChatDisciplineId}/chat/messages`, {
+        const body = { content, message_type: 'text' };
+        if (replyToId) body.reply_to = replyToId;
+        const res = await fetch(`/api/disciplines/${currentChatDisciplineId}/chat/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ content, message_type: 'text' })
+            body: JSON.stringify(body)
         });
-
-        const data = await response.json();
-
+        const data = await res.json();
         if (data.success) {
             input.value = '';
-            await loadChatMessages();
+            await loadChatMessages(true);
             input.focus();
             if (data.message) showToast(data.message, 'success');
         } else {
-            showToast(data.error || 'Erro ao enviar mensagem', 'error');
+            showToast(data.error || 'Erro ao enviar', 'error');
         }
-    } catch (error) {
-        console.error('Erro ao enviar mensagem:', error);
+    } catch(e) {
         showToast('Erro ao enviar mensagem', 'error');
     } finally {
         button.disabled = false;
@@ -153,97 +274,206 @@ async function sendChatMessage() {
     }
 }
 
-// Excluir mensagem
-async function deleteChatMessage(messageId) {
-    if (!confirm('Tem certeza que deseja excluir esta mensagem?')) return;
-
+async function uploadChatImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
     try {
-        const response = await fetch(`/api/chat/messages/${messageId}`, {
-            method: 'DELETE',
-            credentials: 'include'
+        const res = await fetch(`/api/disciplines/${currentChatDisciplineId}/chat/upload`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
         });
-        const data = await response.json();
-
+        const data = await res.json();
         if (data.success) {
-            showToast('Mensagem excluída', 'success');
-            await loadChatMessages();
+            const content = `![imagem](${data.url})`;
+            const msgRes = await fetch(`/api/disciplines/${currentChatDisciplineId}/chat/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ content, message_type: 'image' })
+            });
+            if (msgRes.ok) await loadChatMessages(true);
         } else {
-            showToast(data.error || 'Erro ao excluir', 'error');
+            showToast(data.error, 'error');
         }
-    } catch (error) {
-        console.error('Erro ao excluir mensagem:', error);
-        showToast('Erro ao excluir mensagem', 'error');
+    } catch(e) { showToast('Erro ao enviar imagem', 'error'); }
+}
+
+function searchMessages() {
+    searchTerm = document.getElementById('chat-search-input').value;
+    loadChatMessages(true);
+}
+
+function handleChatKeyPress(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendChatMessage();
+    } else {
+        if (!isTyping) {
+            isTyping = true;
+            fetch(`/api/disciplines/${currentChatDisciplineId}/chat/typing`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ typing: true })
+            }).catch(e=>console.log);
+        }
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            isTyping = false;
+            fetch(`/api/disciplines/${currentChatDisciplineId}/chat/typing`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ typing: false })
+            }).catch(e=>console.log);
+        }, 1000);
     }
 }
 
-// Fixar/desafixar mensagem (apenas professor/admin)
-async function togglePinMessage(messageId) {
-    try {
-        const response = await fetch(`/api/chat/messages/${messageId}/pin`, {
-            method: 'PUT',
-            credentials: 'include'
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            showToast(data.message, 'success');
-            await loadChatMessages();
+async function checkNewMessages() {
+    if (!currentChatDisciplineId) return;
+    const res = await fetch(`/api/disciplines/${currentChatDisciplineId}/chat/latest`, { credentials: 'include' });
+    const data = await res.json();
+    if (data.last_message_id && data.last_message_id !== lastMessageId) {
+        if (!document.getElementById('disciplineChatModal').classList.contains('hidden')) {
+            await loadChatMessages(true);
         } else {
-            showToast(data.error || 'Erro ao fixar mensagem', 'error');
+            unreadCount++;
+            updateUnreadBadge(unreadCount);
+            playNotificationSound();
+            showBrowserNotification(`Nova mensagem em ${currentChatDisciplineName}`, data.last_message_preview);
         }
-    } catch (error) {
-        console.error('Erro ao fixar mensagem:', error);
-        showToast('Erro ao fixar mensagem', 'error');
+        lastMessageId = data.last_message_id;
     }
 }
 
-// Auto-refresh
 function startChatAutoRefresh() {
     if (chatAutoRefresh) clearInterval(chatAutoRefresh);
     chatAutoRefresh = setInterval(() => {
         if (currentChatDisciplineId && document.getElementById('disciplineChatModal') &&
             !document.getElementById('disciplineChatModal').classList.contains('hidden')) {
-            loadChatMessages();
+            checkNewMessages();
         }
-    }, 5000);
+    }, 3000);
 }
 
 function stopChatAutoRefresh() {
-    if (chatAutoRefresh) {
-        clearInterval(chatAutoRefresh);
-        chatAutoRefresh = null;
-    }
+    if (chatAutoRefresh) clearInterval(chatAutoRefresh);
+    chatAutoRefresh = null;
 }
 
-// Fechar chat
 function closeDisciplineChat() {
     stopChatAutoRefresh();
     currentChatDisciplineId = null;
+    currentReplyTo = null;
     const modal = document.getElementById('disciplineChatModal');
     if (modal) modal.classList.add('hidden');
+    document.title = originalTitle;
 }
 
-// Atualizar status
-function updateChatStatus(status) {
-    const el = document.getElementById('chat-status');
-    if (el) el.textContent = status;
+async function deleteChatMessage(messageId) {
+    if (!confirm('Excluir esta mensagem?')) return;
+    const res = await fetch(`/api/chat/messages/${messageId}`, { method: 'DELETE', credentials: 'include' });
+    const data = await res.json();
+    if (data.success) {
+        showToast('Mensagem excluída', 'success');
+        await loadChatMessages(true);
+    } else {
+        showToast(data.error, 'error');
+    }
 }
 
-// Formatar hora
+async function togglePinMessage(messageId) {
+    const res = await fetch(`/api/chat/messages/${messageId}/pin`, { method: 'PUT', credentials: 'include' });
+    const data = await res.json();
+    if (data.success) {
+        showToast(data.message, 'success');
+        await loadChatMessages(true);
+    } else {
+        showToast(data.error, 'error');
+    }
+}
+
+function copyMessage(messageId) {
+    const msgDiv = document.querySelector(`.chat-message[data-id="${messageId}"] .message-content`);
+    if (msgDiv) {
+        navigator.clipboard.writeText(msgDiv.innerText);
+        showToast('Mensagem copiada!', 'success');
+    }
+}
+
 function formatChatTime(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = Math.floor((now - date) / 1000);
-
     if (diff < 60) return 'agora';
     if (diff < 3600) return `${Math.floor(diff / 60)} min`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
     return date.toLocaleDateString('pt-BR');
 }
 
-// Evento Enter
-function handleChatKeyPress(event) {
-    if (event.key === 'Enter') {
-        sendChatMessage();
-    }
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
+
+function scrollToBottom() {
+    const container = document.getElementById('chat-messages');
+    if (container) container.scrollTop = container.scrollHeight;
+}
+
+function startTypingPolling() {
+    setInterval(async () => {
+        if (!currentChatDisciplineId) return;
+        const res = await fetch(`/api/disciplines/${currentChatDisciplineId}/chat/typing-status`, { credentials: 'include' });
+        const data = await res.json();
+        const typingDiv = document.getElementById('chat-typing-indicator');
+        if (data.typing_users && data.typing_users.length) {
+            typingDiv.textContent = `${data.typing_users.join(', ')} está digitando...`;
+            typingDiv.style.display = 'block';
+        } else {
+            typingDiv.style.display = 'none';
+        }
+    }, 2000);
+}
+
+function debounce(fn, delay) {
+    let timer;
+    return function() {
+        clearTimeout(timer);
+        timer = setTimeout(fn, delay);
+    };
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    initNotificationSound();
+    startTypingPolling();
+
+    const searchInput = document.getElementById('chat-search-input');
+    if (searchInput) searchInput.addEventListener('input', debounce(() => searchMessages(), 500));
+
+    const uploadBtn = document.getElementById('upload-image-btn');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                if (e.target.files[0]) uploadChatImage(e.target.files[0]);
+            };
+            input.click();
+        });
+    }
+
+    // Observador para scroll quando modal abrir
+    const observer = new MutationObserver(() => {
+        const modal = document.getElementById('disciplineChatModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            scrollToBottom();
+        }
+    });
+    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+});
