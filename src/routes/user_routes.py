@@ -112,11 +112,9 @@ def get_current_user():
     """Obter dados do usuário logado"""
     try:
         user_id = session['user_id']
-
-        # pega o dict base vindo do serviço
         user = UserService.get_user(user_id)  # retorna um dict
 
-        # se for professor, anexar perfil com nome
+        # Se for professor, anexar perfil com nome
         if user.get('role') == 'teacher':
             professor = Professor.query.filter_by(user_id=user_id).first()
             if professor:
@@ -131,10 +129,10 @@ def get_current_user():
 
         return jsonify({'success': True, 'user': user}), 200
 
-    except UserNotFound as e:
-        return jsonify({'error': str(e), 'success': False}), 404
     except Exception as e:
-        return jsonify({'error': str(e), 'success': False}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ============================================================================

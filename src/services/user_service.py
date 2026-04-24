@@ -16,8 +16,8 @@ Métodos:
 """
 
 from datetime import datetime
-from src.models.user import User, db
-from src.models.academic import Student, Professor, Admin
+from src.models.academic import Student, Professor, Admin, Enrollment, Discipline
+from src.models.user import db, User, UserMission, UserAchievement, UserReward
 
 
 # ============================================================================
@@ -96,7 +96,7 @@ class UserService:
             role=role,
             current_xp=0,
             current_level=1,
-            coins=0  # CORRIGIDO: era 'current_coins'
+            coins=0
         )
         user.set_password(password)
 
@@ -150,7 +150,7 @@ class UserService:
         if professor:
             user_data['professor_profile'] = professor.to_dict()
 
-        # NOVO: Anexar perfil de admin, se existir
+        # Anexar perfil de admin, se existir
         admin = Admin.query.filter_by(user_id=user.id).first()
         if admin:
             user_data['admin_profile'] = admin.to_dict()
@@ -191,7 +191,6 @@ class UserService:
         if not user:
             raise UserNotFound(f"Usuário {user_id} não encontrado")
 
-        # CORRIGIDO: 'coins' em vez de 'current_coins'
         return {
             'user_id': user.id,
             'username': user.username,
@@ -199,7 +198,7 @@ class UserService:
             'level': user.current_level,
             'xp': user.current_xp,
             'xp_to_next_level': ((user.current_level + 1) * 100) - user.current_xp,
-            'coins': user.coins,  # CORRIGIDO
+            'coins': user.coins,
             'created_at': user.created_at.isoformat() if user.created_at else None,
             'xp_progress': {
                 'current': user.current_xp,
@@ -298,36 +297,37 @@ class UserService:
     @staticmethod
     def delete_user(user_id):
         """
-        Deletar usuário (admin)
-        Será deletado em cascata com todos seus dados
-
-        Args:
-            user_id: ID do usuário
-
-        Returns:
-            dict: Status da deleção
-
-        Raises:
-            UserNotFound: Se usuário não existe
+        Deletar usuário (admin) - remove todas as dependências
         """
         user = User.query.get(user_id)
         if not user:
             raise UserNotFound(f"Usuário {user_id} não encontrado")
 
-        # Deletar perfis associados
+        # 1. Remove dependências de gamificação (missões, conquistas, recompensas)
+        UserMission.query.filter_by(user_id=user.id).delete()
+        UserAchievement.query.filter_by(user_id=user.id).delete()
+        UserReward.query.filter_by(user_id=user.id).delete()
+
+        # 2. Remove perfis acadêmicos e suas dependências
         if user.role == 'student':
             student = Student.query.filter_by(user_id=user.id).first()
             if student:
+                # Remove todas as matrículas do estudante
+                Enrollment.query.filter_by(student_id=student.id).delete()
+                # Remove o perfil de estudante
                 db.session.delete(student)
         elif user.role == 'teacher':
             professor = Professor.query.filter_by(user_id=user.id).first()
             if professor:
+                # Opcional: desassocia disciplinas (coloca professor_id = NULL)
+                Discipline.query.filter_by(professor_id=professor.id).update({Discipline.professor_id: None})
                 db.session.delete(professor)
         elif user.role == 'admin':
             admin = Admin.query.filter_by(user_id=user.id).first()
             if admin:
                 db.session.delete(admin)
 
+        # 3. Finalmente, deleta o usuário
         db.session.delete(user)
         db.session.commit()
 
@@ -352,16 +352,26 @@ class UserService:
         Returns:
             dict: Nova progressão do usuário
         """
+        if xp_amount < 0:
+            raise ValueError("Quantidade de XP não pode ser negativa")
+
         user = User.query.get(user_id)
         if not user:
             raise UserNotFound(f"Usuário {user_id} não encontrado")
 
         old_level = user.current_level
-
         user.current_xp += xp_amount
         user.current_level = (user.current_xp // 100) + 1
 
-        db.session.commit()
+        # Garante que o nível nunca diminua
+        if user.current_level < old_level:
+            user.current_level = old_level
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise
 
         level_up = user.current_level > old_level
 
@@ -387,17 +397,25 @@ class UserService:
         Returns:
             dict: Nova progressão do usuário
         """
+        if coin_amount < 0:
+            raise ValueError("Quantidade de coins não pode ser negativa")
+
         user = User.query.get(user_id)
         if not user:
             raise UserNotFound(f"Usuário {user_id} não encontrado")
 
-        user.coins += coin_amount  # CORRIGIDO: era 'current_coins'
-        db.session.commit()
+        user.coins += coin_amount
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise
 
         return {
             'success': True,
             'coins_added': coin_amount,
-            'total_coins': user.coins  # CORRIGIDO
+            'total_coins': user.coins
         }
 
     @staticmethod

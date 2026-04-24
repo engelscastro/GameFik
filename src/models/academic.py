@@ -386,3 +386,67 @@ class Admin(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'user_data': self.user.to_dict() if self.user else None
         }
+
+class TurmaFeedPost(db.Model):
+    """Postagens no mural da turma"""
+    __tablename__ = 'turma_feed_posts'
+    id = db.Column(db.Integer, primary_key=True)
+    ano_turma = db.Column(db.String(20), nullable=False)          # ex: '7_ano_final'
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    post_type = db.Column(db.String(20), default='announcement')  # announcement, material, assignment, question
+    file_url = db.Column(db.String(500))
+    due_date = db.Column(db.DateTime)                             # para atividades
+    points = db.Column(db.Integer, default=0)                     # pontuação máxima
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref='feed_posts')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'ano_turma': self.ano_turma,
+            'user_id': self.user_id,
+            'user_name': self.user.username,
+            'user_role': self.user.role,
+            'title': self.title,
+            'content': self.content,
+            'post_type': self.post_type,
+            'file_url': self.file_url,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'points': self.points,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class TurmaAssignmentSubmission(db.Model):
+    """Entrega de atividades pelos alunos"""
+    __tablename__ = 'turma_assignment_submissions'
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('turma_feed_posts.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    content = db.Column(db.Text)               # resposta em texto
+    file_url = db.Column(db.String(500))       # arquivo enviado
+    grade = db.Column(db.Float)                # nota atribuída (0 a 100)
+    feedback = db.Column(db.Text)              # feedback do professor
+    status = db.Column(db.String(20), default='submitted')  # submitted, graded, late
+
+    post = db.relationship('TurmaFeedPost', backref='submissions')
+    student = db.relationship('Student', backref='submissions')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'post_id': self.post_id,
+            'student_id': self.student_id,
+            'student_name': self.student.nome,
+            'submitted_at': self.submitted_at.isoformat() if self.submitted_at else None,
+            'content': self.content,
+            'file_url': self.file_url,
+            'grade': self.grade,
+            'feedback': self.feedback,
+            'status': self.status,
+        }

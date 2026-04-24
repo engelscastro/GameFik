@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+
+# Banco de dados
+database/*.db
+database/*.db-journal
+
+# Sessões Flask
+flask_session/
+
+# Uploads
+static/uploads/
+
+# IDE
+.idea/
+.vscode/
+
+# Outros
+*.log
+.DS_Store

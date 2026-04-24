@@ -284,3 +284,95 @@ function closeModalById(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.add('hidden');
 }
+
+// ==================== SALA DE AULA VIRTUAL ====================
+
+// Função para abrir a sala de aula virtual a partir da disciplina
+// Em teacher.js
+function openVirtualClassroom(disciplineId, disciplineName) {
+    console.log(`🎓 Abrindo sala de aula virtual: ${disciplineName}`);
+    if (typeof window.openVirtualClassroom === 'function') {
+        window.openVirtualClassroom(disciplineId, disciplineName);
+    } else {
+        console.warn('classroom-manager.js não carregado, usando chat padrão');
+        // Fallback: abrir chat da disciplina
+        if (typeof openDisciplineChat === 'function') {
+            openDisciplineChat(disciplineId, disciplineName);
+        } else {
+            showToast('Sala de aula não disponível', 'error');
+        }
+    }
+}
+
+// Modificar o botão "Ver Alunos" para abrir a sala de aula
+// Substitua o botão "Ver Alunos" no renderTeacherDisciplines
+function renderTeacherDisciplinesWithClassroom(disciplines) {
+    const container = document.getElementById('teacher-disciplines-container');
+    if (!container) return;
+
+    if (!disciplines || disciplines.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-chalkboard-teacher" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <h3>Nenhuma disciplina atribuída</h3>
+                <p>Você ainda não está ministrando nenhuma disciplina.</p>
+                <small>Entre em contato com o administrador para atribuir disciplinas a você.</small>
+            </div>
+        `;
+        return;
+    }
+
+    const totalStudents = disciplines.reduce((sum, d) => sum + (d.student_count || 0), 0);
+
+    container.innerHTML = `
+        <div class="teacher-stats">
+            <div class="teacher-stat-card">
+                <i class="fas fa-book"></i>
+                <div class="stat-value">${disciplines.length}</div>
+                <div class="stat-label">Disciplinas Ministradas</div>
+            </div>
+            <div class="teacher-stat-card">
+                <i class="fas fa-users"></i>
+                <div class="stat-value">${totalStudents}</div>
+                <div class="stat-label">Total de Alunos</div>
+            </div>
+            <div class="teacher-stat-card">
+                <i class="fas fa-chalkboard"></i>
+                <div class="stat-value">Sala Virtual</div>
+                <div class="stat-label">Clique para acessar</div>
+            </div>
+        </div>
+
+        <div class="teacher-disciplines-grid">
+            ${disciplines.map(discipline => `
+                <div class="teacher-discipline-card" onclick="openVirtualClassroom(${discipline.id}, '${escapeHtml(discipline.nome)}')">
+                    <div class="discipline-header">
+                        <div class="discipline-code">${escapeHtml(discipline.codigo)}</div>
+                        <div class="discipline-students-badge">
+                            <i class="fas fa-users"></i> ${discipline.student_count || 0} alunos
+                        </div>
+                    </div>
+                    <h3 class="discipline-name">${escapeHtml(discipline.nome)}</h3>
+                    <div class="discipline-info">
+                        <span><i class="fas fa-clock"></i> ${discipline.carga_horaria}h</span>
+                        <span><i class="fas fa-graduation-cap"></i> ${discipline.ano_turma || 'Turma não definida'}</span>
+                    </div>
+                    <div class="discipline-actions">
+                        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openVirtualClassroom(${discipline.id}, '${escapeHtml(discipline.nome)}')">
+                            <i class="fas fa-door-open"></i> Entrar na Sala
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); createMissionForDiscipline(${discipline.id})">
+                            <i class="fas fa-plus"></i> Nova Missão
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); openDisciplineChat(${discipline.id}, '${escapeHtml(discipline.nome)}')">
+                            <i class="fas fa-comment"></i> Chat Rápido
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Substituir a função renderTeacherDisciplines existente
+window.renderTeacherDisciplines = renderTeacherDisciplinesWithClassroom;

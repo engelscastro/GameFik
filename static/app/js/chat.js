@@ -107,7 +107,6 @@ async function loadChatMessages(reset = false) {
                 prependMessages(data.messages);
                 const container = document.getElementById('chat-messages');
                 const oldScrollHeight = container.scrollHeight;
-                // manter posição relativa
                 if (container.scrollTop === 0) {
                     container.scrollTop = container.scrollHeight - oldScrollHeight;
                 }
@@ -177,12 +176,19 @@ function createMessageElement(msg) {
     return div;
 }
 
+// 🔧 CORREÇÃO PRINCIPAL: formatação de Markdown e imagens
 function formatMessageText(text) {
     let html = escapeHtml(text);
+    // Negrito
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Itálico
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Código inline
     html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+    // Links
     html = html.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+    // Imagens ![](url) ou ![alt](url) - com classe para CSS
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="chat-image" loading="lazy">');
     return html;
 }
 
@@ -274,6 +280,7 @@ async function sendChatMessage() {
     }
 }
 
+// 🔧 CORREÇÃO NO UPLOAD: envia como texto com markdown
 async function uploadChatImage(file) {
     const formData = new FormData();
     formData.append('image', file);
@@ -290,7 +297,7 @@ async function uploadChatImage(file) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ content, message_type: 'image' })
+                body: JSON.stringify({ content, message_type: 'text' })  // 'text' para formatar
             });
             if (msgRes.ok) await loadChatMessages(true);
         } else {

@@ -324,6 +324,29 @@
                                     <i class="fas fa-plus"></i> Novo Usuário
                                 </button>
                             </div>
+
+                            <!-- Filtros -->
+                            <div class="user-filter-bar" style="display: flex; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap;">
+                                <button class="filter-btn active" data-filter="all" onclick="filterUsersByType('all')">
+                                    <i class="fas fa-users"></i> Todos (<span id="filter-count-all">0</span>)
+                                </button>
+                                <button class="filter-btn" data-filter="student" onclick="filterUsersByType('student')">
+                                    <i class="fas fa-user-graduate"></i> Alunos (<span id="filter-count-student">0</span>)
+                                </button>
+                                <button class="filter-btn" data-filter="teacher" onclick="filterUsersByType('teacher')">
+                                    <i class="fas fa-chalkboard-user"></i> Professores (<span id="filter-count-teacher">0</span>)
+                                </button>
+                                <button class="filter-btn" data-filter="admin" onclick="filterUsersByType('admin')">
+                                    <i class="fas fa-user-shield"></i> Administradores (<span id="filter-count-admin">0</span>)
+                                </button>
+                            </div>
+
+                            <!-- Busca -->
+                            <div style="margin-bottom: 1rem;">
+                                <input type="text" id="search-user-input" class="form-control" placeholder="🔍 Buscar por nome, usuário ou matrícula..."
+                                       style="max-width: 300px;" onkeyup="filterUsersBySearch(this.value)">
+                            </div>
+
                             <div class="admin-list" id="admin-users-list">
                                 <p class="empty-state">Carregando usuários...</p>
                             </div>
@@ -608,6 +631,8 @@
         <div class="modal-body">
             <form id="user-form" onsubmit="event.preventDefault(); saveUser();">
                 <input type="hidden" id="user-id">
+                <input type="hidden" id="user-student-id">
+                <input type="hidden" id="user-teacher-id">
                 <div class="form-group">
                     <label>Nome *</label>
                     <input type="text" id="user-fullname" required class="form-control" placeholder="Nome completo">
@@ -712,6 +737,7 @@
 <script src="js/admin/admin-achievements.js"></script>
 <script src="js/admin/admin-rewards.js"></script>
 <script src="js/admin/admin-disciplines.js"></script>
+<script src="js/classroom-manager.js"></script>        <!-- ← NOVO -->
 <!-- Main app -->
 <script src="js/app.js"></script>
 </body>

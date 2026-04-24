@@ -5,7 +5,7 @@ Facilita o registro de todos os blueprints no aplicativo Flask
 
 from .discipline import discipline_bp
 from .professor import professor_bp
-from .student import student_bp
+# from .student import student_bp  ← REMOVA ESTA LINHA (comente ou delete)
 from .enrollment import enrollment_bp
 from .grade import grade_bp
 from .chat import chat_bp
@@ -19,16 +19,12 @@ def register_blueprints(app, url_prefix='/api'):
     Args:
         app: Instância do Flask
         url_prefix: Prefixo de URL para todos os blueprints (padrão: '/api')
-
-    Exemplo:
-        from academic_blueprints import register_blueprints
-        register_blueprints(app)
     """
 
     # Registrar cada blueprint
     app.register_blueprint(discipline_bp, url_prefix=url_prefix)
     app.register_blueprint(professor_bp, url_prefix=url_prefix)
-    app.register_blueprint(student_bp, url_prefix=url_prefix)
+    # app.register_blueprint(student_bp, url_prefix=url_prefix)  ← REMOVA ESTA LINHA
     app.register_blueprint(enrollment_bp, url_prefix=url_prefix)
     app.register_blueprint(grade_bp, url_prefix=url_prefix)
     app.register_blueprint(chat_bp, url_prefix=url_prefix)
@@ -37,7 +33,6 @@ def register_blueprints(app, url_prefix='/api'):
     print("✅ Todos os blueprints acadêmicos foram registrados com sucesso!")
     print(f"   - Discipline Blueprint ({url_prefix})")
     print(f"   - Professor Blueprint ({url_prefix})")
-    print(f"   - Student Blueprint ({url_prefix})")
     print(f"   - Enrollment Blueprint ({url_prefix})")
     print(f"   - Grade Blueprint ({url_prefix})")
     print(f"   - Chat Blueprint ({url_prefix})")
@@ -47,10 +42,10 @@ def register_blueprints(app, url_prefix='/api'):
 __all__ = [
     'discipline_bp',
     'professor_bp',
-    'student_bp',
+    # 'student_bp',  ← REMOVA ESTA LINHA
     'enrollment_bp',
     'grade_bp',
     'chat_bp',
-    'admin_bp',          # NOVO
+    'admin_bp',
     'register_blueprints'
 ]

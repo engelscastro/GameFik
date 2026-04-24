@@ -4,6 +4,7 @@ Responsável por gerenciar chats, mensagens, anúncios,
 pin de mensagens e criação automática de chats.
 """
 
+from datetime import datetime
 from flask import Blueprint, request, jsonify, session
 
 from src.models.academic import Discipline, Student, Enrollment, DisciplineChat, ChatMessage
@@ -157,10 +158,10 @@ def delete_chat_message(message_id):
         message = ChatMessage.query.get_or_404(message_id)
 
         can_delete = (
-            message.user_id == current_user.id or
-            current_user.role in ['teacher', 'admin'] or
-            (current_user.role == 'teacher' and
-             message.chat.discipline.professor_id == current_user.id)
+                message.user_id == current_user.id or
+                current_user.role in ['teacher', 'admin'] or
+                (current_user.role == 'teacher' and
+                 message.chat.discipline.professor_id == current_user.id)
         )
 
         if not can_delete:
@@ -266,12 +267,18 @@ def ensure_discipline_chat(discipline_id):
     """Garante que um chat existe para a disciplina"""
     try:
         current_user = User.query.get(session['user_id'])
-        discipline = Discipline.query.get_or_404(discipline_id)
+        print(f"🔍 DEBUG - Usuário: {current_user.username} (role: {current_user.role})")
 
-        # Verificar se o usuário tem acesso à disciplina
+        discipline = Discipline.query.get_or_404(discipline_id)
+        print(f"🔍 DEBUG - Disciplina: {discipline.nome}")
+
+        # VERIFICAÇÃO PARA ESTUDANTES
         if current_user.role == 'student':
             student = Student.query.filter_by(user_id=current_user.id).first()
+            print(f"🔍 DEBUG - Perfil estudante encontrado: {student is not None}")
+
             if not student:
+                print(f"❌ Perfil de estudante não encontrado para user_id {current_user.id}")
                 return jsonify({
                     'success': False,
                     'error': 'Perfil de estudante não encontrado'
@@ -282,32 +289,31 @@ def ensure_discipline_chat(discipline_id):
                 discipline_id=discipline_id,
                 status='active'
             ).first()
+            print(f"🔍 DEBUG - Matrícula encontrada: {enrollment is not None}")
 
             if not enrollment:
+                print(f"❌ Estudante {student.nome} NÃO está matriculado em {discipline.nome}")
                 return jsonify({
                     'success': False,
-                    'error': 'Acesso não autorizado à disciplina'
+                    'error': f'Você não está matriculado na disciplina {discipline.nome}'
                 }), 403
+            else:
+                print(f"✅ Estudante {student.nome} está matriculado!")
 
-        # Verificar se chat já existe, se não, criar
+        # Verificar se chat já existe
         chat = DisciplineChat.query.filter_by(discipline_id=discipline_id).first()
         if not chat:
             chat = DisciplineChat(discipline_id=discipline_id, is_active=True)
             db.session.add(chat)
             db.session.commit()
-            print(f"✅ Chat criado para disciplina: {discipline.nome} (ID: {discipline_id})")
-        else:
-            print(f"✅ Chat já existe para disciplina: {discipline.nome} (ID: {discipline_id})")
+            print(f"✅ Chat criado para disciplina: {discipline.nome}")
 
-        return jsonify({
-            'success': True,
-            'chat_id': chat.id,
-            'message': 'Chat disponível'
-        })
+        return jsonify({'success': True, 'chat_id': chat.id, 'message': 'Chat disponível'})
 
     except Exception as e:
-        db.session.rollback()
-        print(f"❌ Erro ao criar chat: {str(e)}")
+        print(f"❌ Erro: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -387,167 +393,149 @@ def debug_chats_status():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# ========== NOVAS FUNCIONALIDADES ==========
 
-# Indicador "digitando..."
-_typing_users = {}  # { discipline_id: { user_id: timestamp } }
+# ========== UPLOAD DE IMAGEM ==========
+@chat_bp.route('/disciplines/<int:discipline_id>/chat/upload', methods=['POST'])
+@login_required
+def upload_chat_image(discipline_id):
+    """Enviar imagem no chat (retorna URL para inclusão na mensagem)"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'Nenhuma imagem enviada'}), 400
+
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'Arquivo vazio'}), 400
+
+        # Validar extensão
+        ext = file.filename.rsplit('.', 1)[-1].lower()
+        if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+            return jsonify({'success': False, 'error': 'Formato não suportado. Use PNG, JPG, GIF ou WEBP.'}), 400
+
+        # Gerar nome único
+        import uuid
+        import os
+        from flask import current_app
+
+        # Criar pasta de uploads se não existir
+        upload_dir = os.path.join(current_app.static_folder, 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+
+        filename = f"chat_{discipline_id}_{uuid.uuid4().hex}.{ext}"
+        file.save(os.path.join(upload_dir, filename))
+
+        # URL pública da imagem
+        image_url = f"/static/uploads/{filename}"
+        return jsonify({'success': True, 'url': image_url})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+    # ========== ÚLTIMA MENSAGEM (para notificações) ==========
+@chat_bp.route('/disciplines/<int:discipline_id>/chat/latest', methods=['GET'])
+@login_required
+def get_latest_message(discipline_id):
+    """Retorna a última mensagem do chat (para verificar novas mensagens)"""
+    try:
+        chat = DisciplineChat.query.filter_by(discipline_id=discipline_id).first()
+        if not chat:
+            return jsonify({
+                'success': True,
+                'last_message_id': None,
+                'last_message_preview': None
+            })
+        last_message = ChatMessage.query.filter_by(chat_id=chat.id).order_by(
+            ChatMessage.created_at.desc()
+        ).first()
+        return jsonify({
+            'success': True,
+            'last_message_id': last_message.id if last_message else None,
+            'last_message_preview': last_message.content[:50] if last_message else None,
+            'last_message_time': last_message.created_at.isoformat() if last_message else None
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ========== INDICADOR "DIGITANDO" ==========
+# Dicionário simples para armazenar status de digitação
+typing_status = {}  # chave: f"{discipline_id}:{user_id}", valor: timestamp
 
 @chat_bp.route('/disciplines/<int:discipline_id>/chat/typing', methods=['POST'])
 @login_required
-def set_typing(discipline_id):
-    data = request.json
-    is_typing = data.get('typing', False)
-    user_id = session['user_id']
-    if is_typing:
-        _typing_users.setdefault(discipline_id, {})[user_id] = datetime.utcnow()
-    else:
-        _typing_users.get(discipline_id, {}).pop(user_id, None)
-    return jsonify({'success': True})
+def set_typing_status(discipline_id):
+    """Define que o usuário está digitando"""
+    try:
+        user_id = session['user_id']
+        key = f"{discipline_id}:{user_id}"
+        typing_status[key] = datetime.utcnow().timestamp()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @chat_bp.route('/disciplines/<int:discipline_id>/chat/typing-status', methods=['GET'])
 @login_required
 def get_typing_status(discipline_id):
-    now = datetime.utcnow()
-    typing = []
-    for uid, ts in _typing_users.get(discipline_id, {}).items():
-        if (now - ts).total_seconds() < 3:
-            user = User.query.get(uid)
-            if user:
-                typing.append(user.username)
-        else:
-            _typing_users[discipline_id].pop(uid, None)
-    return jsonify({'success': True, 'typing_users': typing})
-
-# Envio de imagem
-@chat_bp.route('/disciplines/<int:discipline_id>/chat/upload', methods=['POST'])
-@login_required
-def upload_chat_image(discipline_id):
+    """Retorna lista de usuários que estão digitando na disciplina"""
     try:
-        if 'image' not in request.files:
-            return jsonify({'success': False, 'error': 'Nenhuma imagem enviada'}), 400
-        file = request.files['image']
-        if file.filename == '':
-            return jsonify({'success': False, 'error': 'Arquivo vazio'}), 400
-        ext = file.filename.rsplit('.', 1)[-1].lower()
-        if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
-            return jsonify({'success': False, 'error': 'Formato não suportado'}), 400
-        import uuid, os
-        from flask import current_app
-        upload_dir = current_app.config.get('UPLOAD_FOLDER', 'static/uploads')
-        os.makedirs(upload_dir, exist_ok=True)
-        filename = f"chat_{discipline_id}_{uuid.uuid4().hex}.{ext}"
-        file.save(os.path.join(upload_dir, filename))
-        url = f"/uploads/{filename}"
-        return jsonify({'success': True, 'url': url})
+        current_user_id = session['user_id']
+        now = datetime.utcnow().timestamp()
+        timeout = 3  # segundos
+        typing_users = []
+        keys_to_remove = []
+        for key, ts in typing_status.items():
+            disc, uid = key.split(':')
+            if int(disc) == discipline_id and uid != str(current_user_id):
+                if now - ts < timeout:
+                    user = User.query.get(int(uid))
+                    if user:
+                        typing_users.append({
+                            'user_id': user.id,
+                            'username': user.username
+                        })
+                else:
+                    keys_to_remove.append(key)
+        for key in keys_to_remove:
+            del typing_status[key]
+        return jsonify({'success': True, 'typing_users': typing_users})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# Reações (👍, ❤️, etc.)
+# ========== REAÇÕES ==========
 @chat_bp.route('/chat/messages/<int:message_id>/react', methods=['POST'])
 @login_required
 def react_to_message(message_id):
-    data = request.json
-    reaction = data.get('reaction')
-    allowed = ['👍', '❤️', '😂', '😮', '😢', '🙏']
-    if reaction not in allowed:
-        return jsonify({'success': False, 'error': 'Reação inválida'}), 400
-    message = ChatMessage.query.get_or_404(message_id)
-    reactions = message.reactions or {}
-    user_id = session['user_id']
-    if reaction in reactions:
-        if user_id in reactions[reaction]:
-            reactions[reaction].remove(user_id)
-            if not reactions[reaction]:
-                del reactions[reaction]
+    """Adiciona ou remove uma reação (emoji) a uma mensagem"""
+    try:
+        data = request.json
+        reaction = data.get('reaction')
+        allowed = ['👍', '❤️', '😂', '😮', '😢', '🙏']
+        if reaction not in allowed:
+            return jsonify({'success': False, 'error': 'Reação inválida'}), 400
+
+        message = ChatMessage.query.get_or_404(message_id)
+        user_id = session['user_id']
+
+        # Se o modelo ChatMessage não tiver um campo 'reactions', podemos usar um dicionário auxiliar
+        # (armazenamento simples em memória - para produção use um campo JSON no banco)
+        if not hasattr(message, 'reactions_cache'):
+            message.reactions_cache = {}  # { "👍": [user_id1, user_id2], ... }
+
+        # Atualizar reações
+        if reaction in message.reactions_cache:
+            if user_id in message.reactions_cache[reaction]:
+                message.reactions_cache[reaction].remove(user_id)
+                if not message.reactions_cache[reaction]:
+                    del message.reactions_cache[reaction]
+            else:
+                message.reactions_cache[reaction].append(user_id)
         else:
-            reactions[reaction].append(user_id)
-    else:
-        reactions[reaction] = [user_id]
-    message.reactions = reactions
-    db.session.commit()
-    return jsonify({'success': True, 'reactions': reactions})
+            message.reactions_cache[reaction] = [user_id]
 
-# Responder (reply)
-@chat_bp.route('/chat/messages/<int:message_id>/reply', methods=['POST'])
-@login_required
-def reply_to_message(message_id):
-    data = request.json
-    content = data.get('content')
-    if not content:
-        return jsonify({'success': False, 'error': 'Conteúdo vazio'}), 400
-    parent = ChatMessage.query.get_or_404(message_id)
-    chat = parent.chat
-    discipline = chat.discipline
-    current_user = User.query.get(session['user_id'])
-    # verifica permissão (igual ao send)
-    if current_user.role == 'student':
-        student = Student.query.filter_by(user_id=current_user.id).first()
-        if not student:
-            return jsonify({'success': False, 'error': 'Perfil de estudante não encontrado'}), 403
-        enrollment = Enrollment.query.filter_by(
-            student_id=student.id,
-            discipline_id=discipline.id,
-            status='active'
-        ).first()
-        if not enrollment:
-            return jsonify({'success': False, 'error': 'Você não está matriculado'}), 403
-    new_msg = ChatMessage(
-        chat_id=chat.id,
-        user_id=current_user.id,
-        content=content,
-        message_type='text',
-        reply_to=message_id
-    )
-    db.session.add(new_msg)
-    db.session.commit()
-    if current_user.role == 'student':
-        current_user.add_xp(2)
-        db.session.commit()
-    return jsonify({'success': True, 'message': new_msg.to_dict()})
-
-# Paginação (scroll infinito)
-@chat_bp.route('/disciplines/<int:discipline_id>/chat', methods=['GET'])
-@login_required
-def get_chat_messages_paginated(discipline_id):
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    search = request.args.get('search', '')
-    chat = DisciplineChat.query.filter_by(discipline_id=discipline_id).first()
-    if not chat:
-        return jsonify({'success': True, 'messages': [], 'has_more': False, 'total': 0})
-    query = ChatMessage.query.filter_by(chat_id=chat.id)
-    if search:
-        query = query.filter(ChatMessage.content.contains(search))
-    paginated = query.order_by(ChatMessage.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
-    result = []
-    for msg in paginated.items:
-        d = msg.to_dict()
-        if msg.reply_to:
-            parent = ChatMessage.query.get(msg.reply_to)
-            if parent:
-                d['parent_message'] = {
-                    'id': parent.id,
-                    'user_name': parent.user.username,
-                    'content': parent.content[:100]
-                }
-        result.append(d)
-    return jsonify({
-        'success': True,
-        'messages': result,
-        'has_more': paginated.has_next,
-        'total': paginated.total
-    })
-
-# Última mensagem (para notificações)
-@chat_bp.route('/disciplines/<int:discipline_id>/chat/latest', methods=['GET'])
-@login_required
-def get_latest_message(discipline_id):
-    chat = DisciplineChat.query.filter_by(discipline_id=discipline_id).first()
-    if not chat:
-        return jsonify({'success': True, 'last_message_id': None})
-    last = ChatMessage.query.filter_by(chat_id=chat.id).order_by(ChatMessage.created_at.desc()).first()
-    return jsonify({
-        'success': True,
-        'last_message_id': last.id if last else None,
-        'last_message_preview': last.content[:50] if last else None
-    })
+        # Para persistir, seria ideal adicionar uma coluna JSON no banco.
+        # Como é um exemplo, vamos apenas retornar o estado atual.
+        return jsonify({
+            'success': True,
+            'reactions': message.reactions_cache
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

@@ -658,4 +658,68 @@ def get_enrollments_grouped_by_student():
         print(f"❌ Erro ao agrupar matrículas por estudante: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@enrollment_bp.route('/enrollments', methods=['POST'])
+@login_required
+def create_enrollment_simple():
+    """Matricular estudante em disciplina (versão simplificada para estudantes)"""
+    try:
+        data = request.json
+        discipline_id = data.get('discipline_id')
+
+        if not discipline_id:
+            return jsonify({'success': False, 'error': 'discipline_id é obrigatório'}), 400
+
+        user_id = session.get('user_id')
+
+        # Buscar perfil do estudante
+        student = Student.query.filter_by(user_id=user_id).first()
+        if not student:
+            return jsonify({'success': False, 'error': 'Perfil de estudante não encontrado'}), 404
+
+        # Verificar se disciplina existe
+        discipline = Discipline.query.get(discipline_id)
+        if not discipline:
+            return jsonify({'success': False, 'error': 'Disciplina não encontrada'}), 404
+
+        # Verificar se já está matriculado
+        existing = Enrollment.query.filter_by(
+            student_id=student.id,
+            discipline_id=discipline_id,
+            status='active'
+        ).first()
+
+        if existing:
+            return jsonify({'success': False, 'error': 'Já matriculado nesta disciplina'}), 400
+
+        # Criar matrícula
+        enrollment = Enrollment(
+            student_id=student.id,
+            discipline_id=discipline_id,
+            status='active'
+        )
+
+        db.session.add(enrollment)
+        db.session.commit()
+
+        # Adicionar XP pela matrícula
+        user = User.query.get(user_id)
+        xp_reward = 10
+        if user:
+            user.add_xp(xp_reward)
+            db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'Matriculado em {discipline.nome} com sucesso! +{xp_reward} XP',
+            'enrollment': {
+                'id': enrollment.id,
+                'discipline_id': discipline_id,
+                'discipline_nome': discipline.nome
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 

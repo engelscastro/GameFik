@@ -1133,32 +1133,32 @@ body {
   .sidebar {
     transform: translateX(-100%);
   }
-  
+
   .sidebar.open {
     transform: translateX(0);
   }
-  
+
   .main-content {
     margin-left: 0;
   }
-  
+
   .stats-bar {
     gap: 0.75rem;
   }
-  
+
   .stat-item {
     padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
   }
-  
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .missions-grid, .achievements-grid, .rewards-grid, .disciplines-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -1589,7 +1589,7 @@ select.form-control option {
     transform: translateY(-2px);
 }
 
-/* botão styles do chat */
+/* Botões do chat */
 .btn-info {
     background: linear-gradient(135deg, #17a2b8, #0f6674);
     color: #fff;
@@ -1646,6 +1646,81 @@ select.form-control option {
 .btn-icon-small:hover {
     opacity: 1;
 }
-.chat-messages {
+/* Contêiner das mensagens (ID usado no JS) */
+#chat-messages {
     scroll-behavior: smooth;
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    max-height: 400px;
+}
+/* Estilo para imagens enviadas no chat */
+.message-content img.chat-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0.5rem 0;
+    transition: transform 0.2s;
+}
+.message-content img.chat-image:hover {
+    transform: scale(1.02);
+}
+/* Indicador de digitação */
+#chat-typing-indicator {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 0.25rem 0.75rem;
+    font-style: italic;
+}
+/* Responsividade */
+@media (max-width: 768px) {
+    .reaction-btn {
+        padding: 0.1rem 0.3rem;
+        font-size: 0.7rem;
+    }
+    .btn-icon-small {
+        font-size: 0.8rem;
+    }
+    .message-content img.chat-image {
+        max-height: 200px;
+    }
+}
+
+/* ==================== FILTROS DE USUÁRIOS ==================== */
+.user-filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-family: var(--font-secondary);
+    font-size: 0.85rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.filter-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: #fff;
+}
+
+.filter-btn i {
+    font-size: 0.9rem;
 }

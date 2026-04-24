@@ -178,6 +178,7 @@ function showAddUserModal() {
 }
 
 // ========== FUNÇÃO DE EDIÇÃO DE USUÁRIO ==========
+// ========== FUNÇÃO DE EDIÇÃO DE USUÁRIO ==========
 async function editUser(userId) {
     try {
         const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
@@ -194,6 +195,14 @@ async function editUser(userId) {
             const user = data.user;
 
             document.getElementById('user-id').value = user.id;
+
+            // ⚠️ IMPORTANTE: Armazenar o student_id se for estudante
+            if (user.role === 'student' && user.profile) {
+                document.getElementById('user-student-id').value = user.profile.id;
+            } else if (user.role === 'teacher' && user.profile) {
+                document.getElementById('user-teacher-id').value = user.profile.id;
+            }
+
             document.getElementById('user-fullname').value = user.profile?.nome || user.username || '';
             document.getElementById('user-cpf').value = user.profile?.cpf || user.username || '';
             document.getElementById('user-role-select').value = user.role;
@@ -314,17 +323,35 @@ async function saveUser() {
         let url, method;
 
         if (isEditing) {
-            // PUT para edição
             method = 'PUT';
+
             if (role === 'student') {
-                url = `${API_BASE_URL}/students/${userId}`;
+                // ⚠️ CORREÇÃO: Usar o student_id do campo oculto
+                const studentId = document.getElementById('user-student-id')?.value;
+                if (studentId && studentId !== '') {
+                    url = `${API_BASE_URL}/students/${studentId}`;
+                } else {
+                    // Se não tiver student_id, criar um novo perfil (POST)
+                    method = 'POST';
+                    url = `${API_BASE_URL}/students`;
+                    // Remover campos que não devem ser enviados na criação
+                    delete data.role;
+                    data.user_id = parseInt(userId);
+                }
             } else if (role === 'teacher') {
-                url = `${API_BASE_URL}/professors/${userId}`;
+                const teacherId = document.getElementById('user-teacher-id')?.value;
+                if (teacherId && teacherId !== '') {
+                    url = `${API_BASE_URL}/professors/${teacherId}`;
+                } else {
+                    method = 'POST';
+                    url = `${API_BASE_URL}/professors`;
+                    delete data.role;
+                    data.user_id = parseInt(userId);
+                }
             } else {
                 url = `${API_BASE_URL}/users/${userId}`;
             }
         } else {
-            // POST para criação
             method = 'POST';
             if (role === 'student') {
                 url = `${API_BASE_URL}/students`;
@@ -335,6 +362,9 @@ async function saveUser() {
                 data.username = data.cpf;
             }
         }
+
+        console.log(`📡 ${method} request para: ${url}`);
+        console.log('📦 Dados:', data);
 
         const response = await fetch(url, {
             method: method,
@@ -481,4 +511,175 @@ const originalLoadAdminUsers = loadAdminUsers;
 window.loadAdminUsers = async function() {
     await originalLoadAdminUsers();
     setTimeout(addFixTeacherButton, 100);
+};
+
+// ==================== FILTROS DE USUÁRIOS ====================
+
+let currentUserFilter = 'all';
+let currentUserSearch = '';
+let originalUsersList = [];
+
+function filterUsersByType(type) {
+    currentUserFilter = type;
+
+    // Atualizar botões ativos
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === type) {
+            btn.classList.add('active');
+        }
+    });
+
+    applyUserFilters();
+}
+
+function filterUsersBySearch(searchTerm) {
+    currentUserSearch = searchTerm.toLowerCase();
+    applyUserFilters();
+}
+
+function applyUserFilters() {
+    if (!originalUsersList.length) return;
+
+    let filteredUsers = [...originalUsersList];
+
+    // Filtrar por tipo
+    if (currentUserFilter !== 'all') {
+        filteredUsers = filteredUsers.filter(user => user.role === currentUserFilter);
+    }
+
+    // Filtrar por busca
+    if (currentUserSearch) {
+        filteredUsers = filteredUsers.filter(user => {
+            const userName = user.profile?.nome || user.username || '';
+            const userLogin = user.username || '';
+            const userMatricula = user.profile?.matricula || '';
+            const userCpf = user.profile?.cpf || '';
+
+            return userName.toLowerCase().includes(currentUserSearch) ||
+                   userLogin.toLowerCase().includes(currentUserSearch) ||
+                   userMatricula.toLowerCase().includes(currentUserSearch) ||
+                   userCpf.toLowerCase().includes(currentUserSearch);
+        });
+    }
+
+    // Renderizar lista filtrada
+    renderFilteredUsers(filteredUsers);
+}
+
+function renderFilteredUsers(users) {
+    const container = document.getElementById('admin-users-list');
+
+    if (!users || users.length === 0) {
+        let emptyMessage = 'Nenhum usuário encontrado.';
+        if (currentUserFilter !== 'all') {
+            const typeNames = { student: 'aluno', teacher: 'professor', admin: 'administrador' };
+            emptyMessage = `Nenhum ${typeNames[currentUserFilter]} encontrado.`;
+        }
+        container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+        return;
+    }
+
+    container.innerHTML = users.map(user => {
+        let displayName = user.profile?.nome || user.username;
+        let displayRole = '';
+        let additionalInfo = '';
+        let avatarIcon = 'fa-user';
+
+        if (user.role === 'student') {
+            displayRole = 'Estudante';
+            avatarIcon = 'fa-user-graduate';
+            if (user.profile) {
+                additionalInfo = `<small class="admin-item-detail">📚 ${user.profile.curso || 'Curso não definido'} | Matrícula: ${user.profile.matricula || 'N/A'}</small>`;
+            }
+        } else if (user.role === 'teacher') {
+            displayRole = 'Professor';
+            avatarIcon = 'fa-chalkboard-user';
+            if (user.profile) {
+                additionalInfo = `<small class="admin-item-detail">🏛️ ${user.profile.departamento || 'Departamento não definido'}</small>`;
+            }
+        } else if (user.role === 'admin') {
+            displayRole = 'Administrador';
+            avatarIcon = 'fa-user-shield';
+            additionalInfo = `<small class="admin-item-detail">🔑 Acesso total ao sistema</small>`;
+        }
+
+        return `
+        <div class="admin-item" data-role="${user.role}">
+            <div class="admin-item-info">
+                <div class="user-avatar"><i class="fas ${avatarIcon}"></i></div>
+                <div>
+                    <div class="admin-item-name">${escapeHtml(displayName)}</div>
+                    <div class="admin-item-username">${escapeHtml(user.username)}</div>
+                    <div class="admin-item-role">${displayRole}</div>
+                    ${additionalInfo}
+                </div>
+            </div>
+            <div class="admin-item-actions">
+                <button class="btn btn-icon" onclick="editUser(${user.id})" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-icon btn-danger" onclick="deleteUser(${user.id})" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// Sobrescrever a função loadAdminUsers para usar os filtros
+window.loadAdminUsers = async function() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users`, { credentials: 'include' });
+        if (response.ok) {
+            const data = await response.json();
+            state.users = data.users || [];
+
+            // Buscar perfis para estudantes e professores
+            const usersWithProfiles = await Promise.all(state.users.map(async (user) => {
+                if (user.role === 'student') {
+                    try {
+                        const profileRes = await fetch(`${API_BASE_URL}/students`, { credentials: 'include' });
+                        if (profileRes.ok) {
+                            const profileData = await profileRes.json();
+                            const studentProfile = profileData.students?.find(s => s.user_id === user.id);
+                            if (studentProfile) user.profile = studentProfile;
+                        }
+                    } catch(e) { console.log('Erro ao buscar perfil do estudante'); }
+                } else if (user.role === 'teacher') {
+                    try {
+                        const profileRes = await fetch(`${API_BASE_URL}/professors`, { credentials: 'include' });
+                        if (profileRes.ok) {
+                            const profileData = await profileRes.json();
+                            const teacherProfile = profileData.professors?.find(p => p.user_id === user.id);
+                            if (teacherProfile) user.profile = teacherProfile;
+                        }
+                    } catch(e) { console.log('Erro ao buscar perfil do professor'); }
+                }
+                return user;
+            }));
+
+            originalUsersList = usersWithProfiles;
+
+            // Atualizar contadores
+            const allCount = document.getElementById('filter-count-all');
+            const studentCount = document.getElementById('filter-count-student');
+            const teacherCount = document.getElementById('filter-count-teacher');
+            const adminCount = document.getElementById('filter-count-admin');
+
+            if (allCount) allCount.textContent = originalUsersList.length;
+            if (studentCount) studentCount.textContent = originalUsersList.filter(u => u.role === 'student').length;
+            if (teacherCount) teacherCount.textContent = originalUsersList.filter(u => u.role === 'teacher').length;
+            if (adminCount) adminCount.textContent = originalUsersList.filter(u => u.role === 'admin').length;
+
+            applyUserFilters();
+
+            // Adicionar botão de correção de perfis
+            setTimeout(addFixTeacherButton, 100);
+        }
+    } catch (error) {
+        console.error('Load users error:', error);
+        const container = document.getElementById('admin-users-list');
+        if (container) container.innerHTML = '<p class="empty-state">Erro ao carregar usuários. Tente novamente.</p>';
+    }
 };
