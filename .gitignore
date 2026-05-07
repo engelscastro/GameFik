@@ -24,3 +24,15 @@ static/uploads/
 # Outros
 *.log
 .DS_Store
+
+# === ADIÇÕES SUGERIDAS ===
+# Arquivos de ambiente com credenciais
+.env
+.env.local
+
+# Backup automático do SQLite
+*.db.bak
+*.db.backup
+
+# Cache do sistema operacional
+Thumbs.db
