@@ -27,6 +27,8 @@ blueprint_modules = [
 
     # Blueprint de administração (NOVO)
     'src.routes.admin_routes',         # Admin - gestão completa
+
+    'src.routes.assessment_routes',  # Avaliações bimestrais
 ]
 
 # Importar dinamicamente todos os blueprints
@@ -65,8 +67,11 @@ for module_name in blueprint_modules:
             blueprint = getattr(module, 'chat_bp')
         elif hasattr(module, 'admin_bp'):
             blueprint = getattr(module, 'admin_bp')
+        elif hasattr(module, 'assessment_bp'):
+            blueprint = getattr(module, 'assessment_bp')
 
-        if blueprint:
+
+    if blueprint:
             ALL_BLUEPRINTS.append(blueprint)
             print(f"✅ {module_name} carregado (blueprint: {blueprint.name})")
         else:

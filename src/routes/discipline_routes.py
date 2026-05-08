@@ -1,6 +1,7 @@
 # src/routes/discipline_routes.py
 """
 Routes para Disciplinas - Controllers HTTP
+CORRIGIDO: Auto-matrícula de alunos ao criar/atualizar disciplina
 """
 
 from functools import wraps
@@ -9,6 +10,40 @@ from src.models.user import db, User
 from src.models.academic import Discipline, Professor, Enrollment, AcademicMission, Student
 
 discipline_bp = Blueprint('discipline', __name__)
+
+
+# ============================================================================
+# FUNÇÃO AUXILIAR: Auto-matrícula
+# ============================================================================
+
+def enroll_all_students_of_year(discipline_id, ano_turma):
+    """Matricula todos os alunos de uma turma em uma disciplina"""
+    if not ano_turma or not discipline_id:
+        return 0
+
+    students = Student.query.filter_by(ano_turma=ano_turma).all()
+    enrolled_count = 0
+
+    for student in students:
+        existing = Enrollment.query.filter_by(
+            student_id=student.id,
+            discipline_id=discipline_id,
+            status='active'
+        ).first()
+        if not existing:
+            enrollment = Enrollment(
+                student_id=student.id,
+                discipline_id=discipline_id,
+                status='active'
+            )
+            db.session.add(enrollment)
+            enrolled_count += 1
+
+    if enrolled_count > 0:
+        db.session.commit()
+        print(f"✅ Auto-matrícula: {enrolled_count} aluno(s) de {ano_turma} matriculado(s) na disciplina {discipline_id}")
+
+    return enrolled_count
 
 
 # ============================================================================
@@ -60,11 +95,9 @@ def get_disciplines():
         elif user.role == 'student':
             student = Student.query.filter_by(user_id=user.id).first()
             if not student or not student.ano_turma:
-                # Aluno sem turma definida não vê nenhuma disciplina
                 return jsonify({'success': True, 'disciplines': []}), 200
             disciplines = Discipline.query.filter_by(ano_turma=student.ano_turma).all()
         else:
-            # Para professores (ou outros), retorna todas (professor tem rota específica)
             disciplines = Discipline.query.all()
 
         result = []
@@ -261,13 +294,13 @@ def get_teacher_disciplines():
 
 
 # ============================================================================
-# CRIAR DISCIPLINA
+# CRIAR DISCIPLINA (COM AUTO-MATRÍCULA)
 # ============================================================================
 
 @discipline_bp.route('/disciplines', methods=['POST'])
 @teacher_or_admin_required
 def create_discipline():
-    """Criar nova disciplina"""
+    """Criar nova disciplina + auto-matrícula dos alunos da turma"""
     try:
         data = request.json
         print(f"📥 Dados recebidos: {data}")
@@ -300,6 +333,11 @@ def create_discipline():
         db.session.add(discipline)
         db.session.commit()
 
+        # 🔥 AUTO-MATRÍCULA: Matricular todos os alunos da turma
+        if discipline.ano_turma:
+            enrolled = enroll_all_students_of_year(discipline.id, discipline.ano_turma)
+            print(f"🎓 Auto-matrícula: {enrolled} aluno(s) matriculado(s) em {discipline.nome}")
+
         return jsonify({
             'success': True,
             'message': 'Disciplina criada com sucesso!',
@@ -323,22 +361,22 @@ def create_discipline():
 
 
 # ============================================================================
-# ATUALIZAR DISCIPLINA
+# ATUALIZAR DISCIPLINA (COM AUTO-MATRÍCULA SE TURMA MUDAR)
 # ============================================================================
 
 @discipline_bp.route('/disciplines/<int:discipline_id>', methods=['PUT'])
 @teacher_or_admin_required
 def update_discipline(discipline_id):
-    """Atualizar disciplina"""
+    """Atualizar disciplina + auto-matrícula se turma mudar"""
     try:
         discipline = Discipline.query.get(discipline_id)
         if not discipline:
             return jsonify({'success': False, 'error': 'Disciplina não encontrada'}), 404
 
         data = request.json
+        old_ano_turma = discipline.ano_turma  # Guardar turma anterior
 
         if 'codigo' in data:
-            # Verificar se novo código já existe
             existing = Discipline.query.filter_by(codigo=data['codigo']).first()
             if existing and existing.id != discipline_id:
                 return jsonify({'success': False, 'error': 'Já existe uma disciplina com este código'}), 400
@@ -360,6 +398,11 @@ def update_discipline(discipline_id):
             discipline.nivel_ensino = data['nivel_ensino']
 
         db.session.commit()
+
+        # 🔥 AUTO-MATRÍCULA: Se a turma mudou, matricular alunos da nova turma
+        if 'ano_turma' in data and data['ano_turma'] and data['ano_turma'] != old_ano_turma:
+            enrolled = enroll_all_students_of_year(discipline.id, discipline.ano_turma)
+            print(f"🎓 Auto-matrícula (turma alterada): {enrolled} aluno(s) matriculado(s)")
 
         return jsonify({
             'success': True,
@@ -408,7 +451,6 @@ def delete_discipline(discipline_id):
         # Verificar se há missões acadêmicas
         academic_missions = AcademicMission.query.filter_by(discipline_id=discipline_id).count()
         if academic_missions > 0:
-            # Excluir missões acadêmicas vinculadas
             AcademicMission.query.filter_by(discipline_id=discipline_id).delete()
 
         db.session.delete(discipline)
@@ -596,6 +638,7 @@ def bulk_enrollment():
         db.session.rollback()
         return jsonify({'error': str(e), 'success': False}), 500
 
+
 # ============================================================================
 # PROFESSOR - VER ALUNOS DA DISCIPLINA
 # ============================================================================
@@ -609,7 +652,6 @@ def get_teacher_discipline_students(discipline_id):
 
         user_id = session['user_id']
 
-        # Verificar se o professor é o responsável pela disciplina
         professor = Professor.query.filter_by(user_id=user_id).first()
         if not professor:
             return jsonify({'success': False, 'error': 'Perfil de professor não encontrado'}), 404
@@ -618,7 +660,6 @@ def get_teacher_discipline_students(discipline_id):
         if not discipline:
             return jsonify({'success': False, 'error': 'Disciplina não encontrada'}), 404
 
-        # Verificar se a disciplina pertence ao professor
         if discipline.professor_id != professor.id:
             return jsonify({'success': False, 'error': 'Esta disciplina não pertence a você'}), 403
 
@@ -657,7 +698,8 @@ def get_teacher_discipline_students(discipline_id):
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-    # ============================================================================
+
+# ============================================================================
 # PROFESSOR - ESTATÍSTICAS
 # ============================================================================
 
@@ -672,7 +714,6 @@ def get_teacher_stats():
         if not professor:
             return jsonify({'success': False, 'error': 'Perfil de professor não encontrado'}), 404
 
-        # Buscar disciplinas do professor
         disciplines = Discipline.query.filter_by(professor_id=professor.id).all()
 
         total_disciplines = len(disciplines)
@@ -681,13 +722,11 @@ def get_teacher_stats():
         total_xp_awarded = 0
 
         for d in disciplines:
-            # Contar alunos
             student_count = Enrollment.query.filter_by(
                 discipline_id=d.id, status='active'
             ).count()
             total_students += student_count
 
-            # Contar missões (usando AcademicMission se existir)
             try:
                 from src.models.academic import AcademicMission
                 mission_count = AcademicMission.query.filter_by(
@@ -708,38 +747,3 @@ def get_teacher_stats():
     except Exception as e:
         print(f"❌ Erro em get_teacher_stats: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
-    # src/routes/discipline_routes.py
-from src.models.academic import Student, Enrollment
-
-def enroll_all_students_of_year(discipline_id, ano_turma):
-    if not ano_turma:
-        return
-    students = Student.query.filter_by(ano_turma=ano_turma).all()
-    for student in students:
-        existing = Enrollment.query.filter_by(
-            student_id=student.id,
-            discipline_id=discipline_id,
-            status='active'
-        ).first()
-        if not existing:
-            enrollment = Enrollment(
-                student_id=student.id,
-                discipline_id=discipline_id,
-                status='active'
-            )
-            db.session.add(enrollment)
-    db.session.commit()
-
-    # Dentro de create_discipline, após salvar a disciplina:
-    db.session.add(discipline)
-    db.session.commit()
-    enroll_all_students_of_year(discipline.id, discipline.ano_turma)
-
-    # Dentro de update_discipline, se ano_turma for alterado:
-    old_ano = discipline.ano_turma
-    if 'ano_turma' in data:
-        discipline.ano_turma = data['ano_turma']
-        # Você pode optar por remover matrículas antigas? (complexo, mas pode manter)
-        # Apenas adiciona novos alunos:
-        enroll_all_students_of_year(discipline.id, discipline.ano_turma)

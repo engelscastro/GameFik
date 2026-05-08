@@ -21,8 +21,9 @@ try:
     from src.routes.student_routes import student_bp
     from src.blueprints.enrollment import enrollment_bp
     from src.blueprints.turma import turma_bp
-    from src.routes.grade_routes import grade_bp
+    from src.blueprints.grade import grade_bp           # ATUALIZADO: grade do blueprints
     from src.blueprints.chat import chat_bp
+    from src.blueprints.assessment import assessment_bp  # NOVO: sistema de avaliações
 except ImportError as e:
     print(f"❌ Erro ao importar blueprints: {e}")
     sys.exit(1)
@@ -67,6 +68,7 @@ blueprints = [
     ("chat", chat_bp, "/api"),
     ("admin", admin_bp, "/api/admin"),
     ("turma", turma_bp, "/api"),
+    ("assessment", assessment_bp, "/api"),  # NOVO
 ]
 
 for name, bp, prefix in blueprints:
@@ -122,7 +124,7 @@ def debug_system_status():
             result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
             tables = [row[0] for row in result]
             counts = {}
-            for table in ["user", "student", "professor", "discipline", "enrollment", "mission", "achievement", "reward"]:
+            for table in ["user", "student", "professor", "discipline", "enrollment", "mission", "achievement", "reward", "assessment", "grade", "grade_summary"]:
                 if table in tables:
                     try:
                         count_result = db.session.execute(text(f"SELECT COUNT(*) FROM {table}"))
@@ -139,7 +141,7 @@ def debug_system_status():
 def check_data_existence():
     """Contagem direta de registros"""
     try:
-        tables = ["discipline", "mission", "student", "professor", "enrollment", "achievement", "user", "reward"]
+        tables = ["discipline", "mission", "student", "professor", "enrollment", "achievement", "user", "reward", "assessment", "grade", "grade_summary"]
         results = {}
         for table in tables:
             try:
@@ -190,6 +192,14 @@ def debug_modals():
             "grades_modal": {
                 "create_grade": "/api/grades",
                 "get_all_grades": "/api/admin/grades",
+                "get_my_grades": "/api/grades/me",
+                "get_boletim": "/api/grades/me/boletim",
+            },
+            "assessments_modal": {
+                "create_assessment": "/api/assessments",
+                "get_assessments": "/api/assessments",
+                "get_assessment_types": "/api/assessment-types",
+                "get_discipline_assessments": "/api/disciplines/<int:discipline_id>/assessments",
             },
             "achievements_modal": {
                 "get_achievements": "/api/achievements",
@@ -234,7 +244,7 @@ def check_database_schema():
         result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
         tables = [row[0] for row in result]
         print(f"   Tabelas existentes: {tables}")
-        for table in ["student", "professor", "discipline"]:
+        for table in ["student", "professor", "discipline", "assessment", "grade", "grade_summary"]:
             if table in tables:
                 result = db.session.execute(text(f"PRAGMA table_info({table})"))
                 columns = [row[1] for row in result]
@@ -302,7 +312,6 @@ def verify_migration():
 # ============= VERIFICAR ARQUIVOS ESTÁTICOS =============
 print("\n🔍 Verificando estrutura de pastas...")
 if os.path.exists(static_root):
-    # Verifica arquivos da landing page e do app
     landing_files = ["index.html", "css/styles.css", "js/app.js"]
     app_files = ["app/index.html", "app/js/app.js", "app/css/styles.css"]
     for f in landing_files:
@@ -320,7 +329,8 @@ with app.app_context():
     from src.models.academic import (
         Discipline, Professor, Student, Enrollment,
         Grade, AcademicMission, DisciplineChat, ChatMessage,
-        TurmaFeedPost, TurmaAssignmentSubmission
+        TurmaFeedPost, TurmaAssignmentSubmission,
+        Assessment, GradeSummary  # NOVOS MODELOS
     )
     db.create_all()
     print("   ✅ Tabelas criadas!")

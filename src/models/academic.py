@@ -140,70 +140,6 @@ class Enrollment(db.Model):
             'discipline_codigo': self.discipline.codigo if self.discipline else None
         }
 
-
-class Grade(db.Model):
-    __tablename__ = 'grade'
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
-    discipline_id = db.Column(db.Integer, db.ForeignKey('discipline.id'), nullable=False)
-    nota1 = db.Column(db.Float, nullable=True)
-    nota2 = db.Column(db.Float, nullable=True)
-    media = db.Column(db.Float, nullable=True)
-    xp_awarded = db.Column(db.Boolean, default=False)  # <- Novo campo para evitar duplicação
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    student = db.relationship('Student', backref='grades', foreign_keys=[student_id])
-    discipline = db.relationship('Discipline', backref='grades', foreign_keys=[discipline_id])
-
-    def calculate_media(self):
-        if self.nota1 is not None and self.nota2 is not None:
-            self.media = (self.nota1 + self.nota2) / 2
-        return self.media
-
-    def get_xp_reward(self):
-        if self.media is None:
-            return 0
-        if self.media >= 9.0:
-            return 100
-        elif self.media >= 8.0:
-            return 80
-        elif self.media >= 7.0:
-            return 60
-        elif self.media >= 6.0:
-            return 40
-        else:
-            return 10
-
-    def award_xp_to_student(self):
-        """Concede XP ao estudante baseado na nota"""
-        if not self.xp_awarded and self.media is not None and self.student:
-            xp_reward = self.get_xp_reward()
-            if xp_reward > 0:
-                result = self.student.add_xp_from_grade(self)
-                self.xp_awarded = True
-                return {'xp_added': xp_reward, 'leveled_up': result['leveled_up']}
-        return {'xp_added': 0, 'leveled_up': False}
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'student_id': self.student_id,
-            'discipline_id': self.discipline_id,
-            'nota1': self.nota1,
-            'nota2': self.nota2,
-            'media': self.media,
-            'xp_reward': self.get_xp_reward(),
-            'xp_awarded': self.xp_awarded,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'student_nome': self.student.nome if self.student else None,
-            'student_matricula': self.student.matricula if self.student else None,
-            'discipline_nome': self.discipline.nome if self.discipline else None,
-            'discipline_codigo': self.discipline.codigo if self.discipline else None
-        }
-
-
 class AcademicMission(db.Model):
     __tablename__ = 'academic_mission'
     id = db.Column(db.Integer, primary_key=True)
@@ -449,4 +385,158 @@ class TurmaAssignmentSubmission(db.Model):
             'grade': self.grade,
             'feedback': self.feedback,
             'status': self.status,
+        }
+
+
+# ============================================================================
+# SISTEMA DE NOTAS BIMESTRAL - NOVOS MODELOS
+# ============================================================================
+
+class Assessment(db.Model):
+    """
+    Avaliação bimestral criada pelo professor
+    Tipos: prova, trabalho, participacao, projeto
+    """
+    __tablename__ = 'assessment'
+    id = db.Column(db.Integer, primary_key=True)
+    discipline_id = db.Column(db.Integer, db.ForeignKey('discipline.id'), nullable=False)
+    professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    assessment_type = db.Column(db.String(50), nullable=False)  # prova, trabalho, participacao, projeto
+    bimestre = db.Column(db.Integer, nullable=False)  # 1, 2, 3, 4
+    peso = db.Column(db.Float, default=1.0)  # peso na média do bimestre
+    max_score = db.Column(db.Float, default=10.0)  # nota máxima
+    due_date = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    discipline = db.relationship('Discipline', backref='assessments')
+    professor = db.relationship('Professor', backref='assessments')
+    grades = db.relationship('Grade', backref='assessment', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'discipline_id': self.discipline_id,
+            'discipline_nome': self.discipline.nome if self.discipline else None,
+            'discipline_codigo': self.discipline.codigo if self.discipline else None,
+            'professor_id': self.professor_id,
+            'professor_nome': self.professor.nome if self.professor else None,
+            'title': self.title,
+            'description': self.description,
+            'assessment_type': self.assessment_type,
+            'bimestre': self.bimestre,
+            'peso': self.peso,
+            'max_score': self.max_score,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'total_grades': len(self.grades) if self.grades else 0
+        }
+
+class Grade(db.Model):
+    """
+    Nota do aluno em uma avaliação específica
+    """
+    __tablename__ = 'grade'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    assessment_id = db.Column(db.Integer, db.ForeignKey('assessment.id'), nullable=False)
+    score = db.Column(db.Float, nullable=True)  # nota obtida
+    feedback = db.Column(db.Text)  # feedback do professor
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    student = db.relationship('Student', backref='grades')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'student_id': self.student_id,
+            'student_nome': self.student.nome if self.student else None,
+            'student_matricula': self.student.matricula if self.student else None,
+            'assessment_id': self.assessment_id,
+            'assessment_title': self.assessment.title if self.assessment else None,
+            'assessment_type': self.assessment.assessment_type if self.assessment else None,
+            'bimestre': self.assessment.bimestre if self.assessment else None,
+            'discipline_id': self.assessment.discipline_id if self.assessment else None,
+            'discipline_nome': self.assessment.discipline.nome if self.assessment and self.assessment.discipline else None,
+            'discipline_codigo': self.assessment.discipline.codigo if self.assessment and self.assessment.discipline else None,
+            'score': self.score,
+            'max_score': self.assessment.max_score if self.assessment else 10.0,
+            'feedback': self.feedback,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class GradeSummary(db.Model):
+    """
+    Resumo de notas do aluno por disciplina - médias bimestrais
+    Atualizado automaticamente quando notas são lançadas
+    """
+    __tablename__ = 'grade_summary'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    discipline_id = db.Column(db.Integer, db.ForeignKey('discipline.id'), nullable=False)
+
+    # Médias bimestrais
+    b1_media = db.Column(db.Float, nullable=True)
+    b2_media = db.Column(db.Float, nullable=True)
+    b3_media = db.Column(db.Float, nullable=True)
+    b4_media = db.Column(db.Float, nullable=True)
+
+    # Média final
+    media_final = db.Column(db.Float, nullable=True)
+
+    # Situação
+    situacao = db.Column(db.String(20), nullable=True)  # aprovado, reprovado, recuperacao
+
+    # Nota de recuperação/final
+    nota_recuperacao = db.Column(db.Float, nullable=True)
+
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    student = db.relationship('Student', backref='grade_summaries')
+    discipline = db.relationship('Discipline', backref='grade_summaries')
+
+    def calcular_media_final(self):
+        """Calcula média final dos bimestres com nota"""
+        notas = [self.b1_media, self.b2_media, self.b3_media, self.b4_media]
+        notas_validas = [n for n in notas if n is not None]
+        if not notas_validas:
+            return None
+        return round(sum(notas_validas) / len(notas_validas), 2)
+
+    def atualizar_situacao(self):
+        """Atualiza situação baseado na média final"""
+        media = self.calcular_media_final()
+        if media is None:
+            self.situacao = None
+            return
+        if media >= 7:
+            self.situacao = 'aprovado'
+        elif media >= 5:
+            self.situacao = 'recuperacao'
+        else:
+            self.situacao = 'reprovado'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'student_id': self.student_id,
+            'student_nome': self.student.nome if self.student else None,
+            'student_matricula': self.student.matricula if self.student else None,
+            'discipline_id': self.discipline_id,
+            'discipline_nome': self.discipline.nome if self.discipline else None,
+            'discipline_codigo': self.discipline.codigo if self.discipline else None,
+            'b1_media': self.b1_media,
+            'b2_media': self.b2_media,
+            'b3_media': self.b3_media,
+            'b4_media': self.b4_media,
+            'media_final': self.media_final,
+            'situacao': self.situacao,
+            'nota_recuperacao': self.nota_recuperacao,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
